@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --glow-color: #00aaff;
+            --panel-bg: rgba(20, 30, 50, 0.5);
+            --text-color: #e0f7ff;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Orbitron', sans-serif;
+            background-color: #000510;
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            z-index: 1;
+        }
+        canvas {
+            display: block;
+        }
+        #ui-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            pointer-events: none;
+        }
+        .button {
+            background: transparent;
+            color: var(--text-color);
+            padding: 12px 24px;
+            border: 2px solid var(--glow-color);
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            pointer-events: all;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 0 10px var(--glow-color), inset 0 0 10px var(--glow-color);
+            text-shadow: 0 0 5px var(--glow-color);
+            margin-top: 20px;
+        }
+        .button:hover {
+            background: rgba(0, 170, 255, 0.2);
+            box-shadow: 0 0 20px var(--glow-color), inset 0 0 20px var(--glow-color);
+        }
+        #message-box, #settings-panel {
+            background-color: var(--panel-bg);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 170, 255, 0.5);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 15px rgba(0, 170, 255, 0.3);
+        }
+        #info-box {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        #settings-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            pointer-events: all;
+        }
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        #settings-panel label {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .slider {
+            -webkit-appearance: none;
+            width: 120px;
+            height: 4px;
+            background: rgba(0, 170, 255, 0.3);
+            border-radius: 5px;
+            outline: none;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--text-color);
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--glow-color);
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="ui-container">
+            <div id="message-box">
+                <h2 id="title">Track Lab</h2>
+                <p id="instructions">Track the highlighted asteroids.</p>
+                <button id="startButton" class="button">Start Game</button>
+            </div>
+            <div id="info-box" style="display: none;">
+                <span id="info-text"></span>
+            </div>
+        </div>
+        <div id="settings-panel">
+            <div class="setting-group">
+                <label for="camera-speed-slider">Camera Speed</label>
+                <input type="range" id="camera-speed-slider" class="slider" min="0" max="0.0005" step="0.00001" value="0.0001">
+            </div>
+            <div class="setting-group">
+                <label id="sphere-count-label" for="sphere-count-slider">8 Asteroids</label>
+                <input type="range" id="sphere-count-slider" class="slider" min="4" max="16" step="2" value="8">
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+    <script>
+        // --- Basic Setup ---
+        const container = document.getElementById('container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
+
+        // --- Game State and Parameters ---
+        let gameState = 'loading';
+        const asteroids = [];
+        const targets = [];
+        let selectedAsteroids = [];
+        let TOTAL_SPHERES = 8;
+        let TARGET_COUNT = 4;
+        const BOX_SIZE = 10;
+        const SPHERE_RADIUS = 0.5;
+        let currentMaxSpeed = 0.05;
+        const ACCELERATION = 0.0001;
+        let currentMovementSpeed = 0;
+        let cameraRotationSpeed = 0.0001;
+        const DEFAULT_ASTEROID_COLOR = 0x8d99ae;
+        
+        // --- Model Loading ---
+        let asteroidModel = null;
+        const loader = new THREE.GLTFLoader();
+        
+        // --- UI Elements ---
+        const startButton = document.getElementById('startButton');
+        const messageBox = document.getElementById('message-box');
+        const title = document.getElementById('title');
+        const instructions = document.getElementById('instructions');
+        const infoBox = document.getElementById('info-box');
+        const infoText = document.getElementById('info-text');
+        const cameraSpeedSlider = document.getElementById('camera-speed-slider');
+        const sphereCountSlider = document.getElementById('sphere-count-slider');
+        const sphereCountLabel = document.getElementById('sphere-count-label');
+        
+        // --- Event Listeners for Settings ---
+        cameraSpeedSlider.addEventListener('input', (e) => cameraRotationSpeed = parseFloat(e.target.value));
+        
+        sphereCountSlider.addEventListener('input', (e) => {
+            TOTAL_SPHERES = parseInt(e.target.value);
+            TARGET_COUNT = TOTAL_SPHERES / 2;
+            sphereCountLabel.textContent = `${TOTAL_SPHERES} Asteroids`;
+            if (gameState !== 'loading') initGame();
+        });
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Reduced ambient light
+        scene.add(ambientLight);
+        
+        const keyLight = new THREE.DirectionalLight(0xffffff, 1.0); // Main light
+        keyLight.position.set(5, 10, 7.5);
+        scene.add(keyLight);
+
+        const fillLight = new THREE.DirectionalLight(0xffffff, 0.4); // Softer fill light
+        fillLight.position.set(-5, -10, -7.5);
+        scene.add(fillLight);
+
+
+        // --- Stylized Bounding Box ---
+        function createStylizedCube(size) {
+            const group = new THREE.Group();
+            const halfSize = size / 2;
+            const cornerSize = 0.25;
+            const edgeRadius = 0.04;
+
+            const edgeMaterial = new THREE.MeshBasicMaterial({ color: 0x00aaff });
+            const cornerMaterial = new THREE.MeshBasicMaterial({ color: 0x00aaff });
+
+            const cornerGeometry = new THREE.BoxGeometry(cornerSize, cornerSize, cornerSize);
+
+            for (let i = 0; i < 8; i++) {
+                const corner = new THREE.Mesh(cornerGeometry, cornerMaterial);
+                corner.position.set(
+                    (i & 1 ? 1 : -1) * halfSize,
+                    (i & 2 ? 1 : -1) * halfSize,
+                    (i & 4 ? 1 : -1) * halfSize
+                );
+                group.add(corner);
+            }
+
+            const edges = [
+                [new THREE.Vector3(-halfSize, -halfSize, -halfSize), new THREE.Vector3(halfSize, -halfSize, -halfSize)],
+                [new THREE.Vector3(-halfSize, -halfSize, -halfSize), new THREE.Vector3(-halfSize, halfSize, -halfSize)],
+                [new THREE.Vector3(-halfSize, -halfSize, -halfSize), new THREE.Vector3(-halfSize, -halfSize, halfSize)],
+                [new THREE.Vector3(halfSize, halfSize, halfSize), new THREE.Vector3(-halfSize, halfSize, halfSize)],
+                [new THREE.Vector3(halfSize, halfSize, halfSize), new THREE.Vector3(halfSize, -halfSize, halfSize)],
+                [new THREE.Vector3(halfSize, halfSize, halfSize), new THREE.Vector3(halfSize, halfSize, -halfSize)],
+                [new THREE.Vector3(-halfSize, halfSize, halfSize), new THREE.Vector3(-halfSize, -halfSize, halfSize)],
+                [new THREE.Vector3(-halfSize, halfSize, halfSize), new THREE.Vector3(-halfSize, halfSize, -halfSize)],
+                [new THREE.Vector3(halfSize, -halfSize, -halfSize), new THREE.Vector3(halfSize, halfSize, -halfSize)],
+                [new THREE.Vector3(halfSize, -halfSize, -halfSize), new THREE.Vector3(halfSize, -halfSize, halfSize)],
+                [new THREE.Vector3(-halfSize, halfSize, -halfSize), new THREE.Vector3(halfSize, halfSize, -halfSize)],
+                [new THREE.Vector3(-halfSize, -halfSize, halfSize), new THREE.Vector3(halfSize, -halfSize, halfSize)],
+            ];
+
+            edges.forEach(edgePoints => {
+                const [start, end] = edgePoints;
+                const path = new THREE.LineCurve3(start, end);
+                const edgeGeometry = new THREE.TubeGeometry(path, 1, edgeRadius, 8, false);
+                const edgeMesh = new THREE.Mesh(edgeGeometry, edgeMaterial);
+                group.add(edgeMesh);
+            });
+
+            return group;
+        }
+        const stylizedCube = createStylizedCube(BOX_SIZE);
+        scene.add(stylizedCube);
+        
+        // --- Fallback procedural asteroid ---
+        function createAsteroidGeometry(radius, detail) {
+            const geometry = new THREE.IcosahedronGeometry(radius, detail);
+            const positionAttribute = geometry.getAttribute('position');
+            
+            for (let i = 0; i < positionAttribute.count; i++) {
+                const vertex = new THREE.Vector3();
+                vertex.fromBufferAttribute(positionAttribute, i);
+                
+                const displacement = Math.random() * 0.15;
+                vertex.multiplyScalar(1 + displacement);
+                
+                positionAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
+            }
+            return geometry;
+        }
+
+        // --- Camera Position ---
+        camera.position.z = 16;
+
+        // --- Raycaster for Mouse Interaction ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        // --- Game Initialization ---
+        function initGame() {
+            if (!asteroidModel) return;
+
+            asteroids.forEach(g => scene.remove(g));
+            asteroids.length = 0;
+            targets.length = 0;
+            selectedAsteroids.length = 0;
+
+            for (let i = 0; i < TOTAL_SPHERES; i++) {
+                const asteroid = asteroidModel.clone();
+
+                asteroid.material = new THREE.MeshStandardMaterial({
+                    color: DEFAULT_ASTEROID_COLOR,
+                    flatShading: true,
+                    roughness: 0.8,
+                    metalness: 0.1
+                });
+                
+                asteroid.position.set(
+                    (Math.random() - 0.5) * (BOX_SIZE - SPHERE_RADIUS * 2),
+                    (Math.random() - 0.5) * (BOX_SIZE - SPHERE_RADIUS * 2),
+                    (Math.random() - 0.5) * (BOX_SIZE - SPHERE_RADIUS * 2)
+                );
+
+                asteroid.velocity = new THREE.Vector3((Math.random() - 0.5), (Math.random() - 0.5), (Math.random() - 0.5)).normalize();
+                asteroids.push(asteroid);
+                scene.add(asteroid);
+            }
+
+            const sphereIndices = [...Array(TOTAL_SPHERES).keys()];
+            for (let i = 0; i < TARGET_COUNT; i++) {
+                const randomIndex = Math.floor(Math.random() * sphereIndices.length);
+                const sphereIndex = sphereIndices.splice(randomIndex, 1)[0];
+                targets.push(asteroids[sphereIndex]);
+            }
+            
+            updateUI('initial');
+        }
+
+        // --- UI Management ---
+        function updateUI(state, correctCount = 0) {
+            gameState = state;
+            messageBox.style.display = 'none';
+            infoBox.style.display = 'none';
+            startButton.style.display = 'none';
+
+            switch (state) {
+                case 'loading':
+                    messageBox.style.display = 'flex';
+                    title.textContent = 'Track Lab';
+                    instructions.textContent = 'Loading Model...';
+                    break;
+                case 'initial':
+                    messageBox.style.display = 'flex';
+                    title.textContent = 'Track Lab';
+                    instructions.textContent = `Track the ${TARGET_COUNT} highlighted asteroids.`;
+                    startButton.textContent = 'Start Game';
+                    startButton.style.display = 'block';
+                    asteroids.forEach(a => a.visible = true);
+                    break;
+                case 'memorizing':
+                    infoBox.style.display = 'block';
+                    infoText.textContent = 'Memorize the targets...';
+                    targets.forEach(target => target.material.color.set(0xf6e05e));
+                    break;
+                case 'tracking':
+                    infoBox.style.display = 'block';
+                    infoText.textContent = 'Tracking...';
+                    asteroids.forEach(sphere => {
+                        sphere.material.color.set(DEFAULT_ASTEROID_COLOR);
+                    });
+                    break;
+                case 'selecting':
+                    infoBox.style.display = 'block';
+                    infoText.textContent = `Select ${TARGET_COUNT} asteroids. (${selectedAsteroids.length}/${TARGET_COUNT})`;
+                    break;
+                case 'result':
+                    messageBox.style.display = 'flex';
+                    title.textContent = `You found ${correctCount} of ${TARGET_COUNT} targets!`;
+                    instructions.textContent = 'Well done! Want to try again?';
+                    startButton.textContent = 'Play Again';
+                    startButton.style.display = 'block';
+                    
+                    asteroids.forEach(asteroid => asteroid.visible = false);
+                    targets.forEach(t => {
+                        t.visible = true;
+                        t.material.color.set(selectedAsteroids.includes(t) ? 0x68d391 : 0xf6e05e);
+                    });
+                    selectedAsteroids.forEach(s => {
+                        if (!targets.includes(s)) {
+                           s.visible = true;
+                           s.material.color.set(0xf56565);
+                        }
+                    });
+                    break;
+            }
+        }
+
+        // --- Game Flow ---
+        startButton.addEventListener('click', () => {
+            if (gameState === 'initial' || gameState === 'result') {
+                initGame();
+                startGameFlow();
+            }
+        });
+
+        function startGameFlow() {
+            updateUI('memorizing');
+            setTimeout(() => {
+                currentMovementSpeed = currentMaxSpeed / 4;
+                updateUI('tracking');
+                setTimeout(() => {
+                    gameState = 'selecting';
+                    updateUI('selecting');
+                }, 8000);
+            }, 2000);
+        }
+
+        // --- Mouse Click Handling ---
+        function onMouseClick(event) {
+            if (gameState !== 'selecting') return;
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(asteroids);
+
+            if (intersects.length > 0) {
+                const clickedAsteroid = intersects[0].object;
+                if (!selectedAsteroids.includes(clickedAsteroid)) {
+                    if (selectedAsteroids.length < TARGET_COUNT) {
+                        selectedAsteroids.push(clickedAsteroid);
+                        clickedAsteroid.material.color.set(0x63b3ed);
+                    }
+                } else {
+                    const index = selectedAsteroids.indexOf(clickedAsteroid);
+                    selectedAsteroids.splice(index, 1);
+                    clickedAsteroid.material.color.set(DEFAULT_ASTEROID_COLOR);
+                }
+                updateUI('selecting');
+                if (selectedAsteroids.length === TARGET_COUNT) endGame();
+            }
+        }
+
+        function endGame() {
+            let correctCount = 0;
+            selectedAsteroids.forEach(selected => {
+                if (targets.includes(selected)) correctCount++;
+            });
+
+            if (correctCount === TARGET_COUNT) {
+                currentMaxSpeed *= 1.10;
+            } else if (correctCount <= TARGET_COUNT / 2) {
+                currentMaxSpeed *= 0.90;
+            }
+            currentMaxSpeed = Math.max(0.03, Math.min(0.15, currentMaxSpeed));
+
+            updateUI('result', correctCount);
+        }
+
+        // --- Load Model and Start ---
+        function loadModelAndStart() {
+            updateUI('loading');
+            const modelUrl = 'https://buffedtraining.github.io/game-assets/Assteroid_0702131044_texture.glb';
+            
+            loader.load(modelUrl, (gltf) => {
+                let loadedMesh = null;
+                gltf.scene.traverse((child) => {
+                    if (child.isMesh) {
+                        loadedMesh = child;
+                    }
+                });
+                
+                if (loadedMesh) {
+                    asteroidModel = loadedMesh;
+                     // Scale the model to fit our game
+                    const box = new THREE.Box3().setFromObject(asteroidModel);
+                    const size = box.getSize(new THREE.Vector3());
+                    const scale = (SPHERE_RADIUS * 2) / size.y;
+                    asteroidModel.scale.set(scale, scale, scale);
+                } else {
+                    // Fallback if no mesh is found in the gltf
+                    asteroidModel = new THREE.Mesh(createAsteroidGeometry(SPHERE_RADIUS, 2));
+                }
+
+                initGame();
+            }, undefined, (error) => {
+                console.error('An error happened while loading the model. This is often a CORS issue. Ensure the model is hosted on a server with CORS enabled.', error);
+                instructions.textContent = 'Error loading model. Using fallback.';
+                asteroidModel = new THREE.Mesh(createAsteroidGeometry(SPHERE_RADIUS, 2));
+                initGame();
+            });
+        }
+        
+        // --- Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (gameState === 'tracking') {
+                if (currentMovementSpeed < currentMaxSpeed) {
+                    currentMovementSpeed = Math.min(currentMaxSpeed, currentMovementSpeed + ACCELERATION);
+                }
+                asteroids.forEach(asteroid => {
+                    asteroid.rotation.x += asteroid.velocity.y * 0.02;
+                    asteroid.rotation.y += asteroid.velocity.x * 0.02;
+
+                    const moveVector = asteroid.velocity.clone().multiplyScalar(currentMovementSpeed);
+                    asteroid.position.add(moveVector);
+                    const halfBox = BOX_SIZE / 2 - SPHERE_RADIUS;
+                    if (asteroid.position.x > halfBox || asteroid.position.x < -halfBox) {
+                        asteroid.velocity.x *= -1;
+                        asteroid.position.x = Math.max(-halfBox, Math.min(halfBox, asteroid.position.x));
+                    }
+                    if (asteroid.position.y > halfBox || asteroid.position.y < -halfBox) {
+                        asteroid.velocity.y *= -1;
+                        asteroid.position.y = Math.max(-halfBox, Math.min(halfBox, asteroid.position.y));
+                    }
+                    if (asteroid.position.z > halfBox || asteroid.position.z < -halfBox) {
+                        asteroid.velocity.z *= -1;
+                        asteroid.position.z = Math.max(-halfBox, Math.min(halfBox, asteroid.position.z));
+                    }
+                });
+                for (let i = 0; i < asteroids.length; i++) {
+                    for (let j = i + 1; j < asteroids.length; j++) {
+                        const a1 = asteroids[i];
+                        const a2 = asteroids[j];
+                        const distanceVec = new THREE.Vector3().subVectors(a1.position, a2.position);
+                        if (distanceVec.length() < SPHERE_RADIUS * 2) {
+                            const overlap = (SPHERE_RADIUS * 2) - distanceVec.length();
+                            const correction = distanceVec.clone().normalize().multiplyScalar(overlap / 2);
+                            a1.position.add(correction);
+                            a2.position.sub(correction);
+                            const v1 = a1.velocity.clone().multiplyScalar(currentMovementSpeed);
+                            const v2 = a2.velocity.clone().multiplyScalar(currentMovementSpeed);
+                            const vDiff = new THREE.Vector3().subVectors(v1, v2);
+                            const xDiff = new THREE.Vector3().subVectors(a1.position, a2.position);
+                            if (vDiff.dot(xDiff) < 0) {
+                                const dotProduct = vDiff.dot(xDiff);
+                                const scale = dotProduct / xDiff.lengthSq();
+                                const impulse = xDiff.clone().multiplyScalar(scale);
+                                v1.sub(impulse);
+                                v2.add(impulse);
+                                a1.velocity.copy(v1.normalize());
+                                a2.velocity.copy(v2.normalize());
+                            }
+                        }
+                    }
+                }
+            }
+            const time = Date.now() * cameraRotationSpeed;
+            const cameraOrbitRadius = 16;
+            camera.position.x = Math.cos(time) * cameraOrbitRadius;
+            camera.position.z = Math.sin(time) * cameraOrbitRadius;
+            camera.lookAt(scene.position);
+
+            renderer.render(scene, camera);
+        }
+
+        // --- Event Listeners ---
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+        window.addEventListener('click', onMouseClick);
+
+        // --- Start ---
+        loadModelAndStart();
+        animate();
+    </script>
+</body>
+</html>
