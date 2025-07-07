@@ -3,563 +3,1118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Track Lab</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <title>Eye Training Exercise</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/grained@0.0.2/grained.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --glow-color: #00aaff;
-            --panel-bg: rgba(20, 30, 50, 0.5);
-            --text-color: #e0f7ff;
-        }
-
-        body {
+        body, html {
+            height: 100%;
             margin: 0;
-            overflow: hidden;
-            font-family: 'Orbitron', sans-serif;
-            background-color: #000510;
-            color: var(--text-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            overflow: hidden; /* Prevent scrolling */
         }
-
-        #container {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            z-index: 1;
+        body {
+            font-family: 'Inter', sans-serif;
+            color: white;
+            background-color: #0f172a; /* Fallback background */
         }
-        canvas {
-            display: block;
+        #background-gradient {
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #082f49);
+            background-size: 400% 400%;
+            animation: gradientBG 25s ease infinite;
         }
-        #ui-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
+        #grain-container {
+            position: fixed;
+            inset: 0;
             pointer-events: none;
+            z-index: -1; /* Sits above the gradient but behind content */
         }
-        .button {
-            background: transparent;
-            color: var(--text-color);
-            padding: 12px 24px;
-            border: 2px solid var(--glow-color);
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            pointer-events: all;
-            transition: all 0.2s ease-in-out;
-            box-shadow: 0 0 10px var(--glow-color), inset 0 0 10px var(--glow-color);
-            text-shadow: 0 0 5px var(--glow-color);
-            margin-top: 20px;
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
-        .button:hover {
-            background: rgba(0, 170, 255, 0.2);
-            box-shadow: 0 0 20px var(--glow-color), inset 0 0 20px var(--glow-color);
+        .eye-container {
+            transition: transform 0.5s ease-in-out;
+            /* Added glow effect to the eyes */
+            filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.7));
         }
-        #message-box, #settings-panel {
-            background-color: var(--panel-bg);
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid rgba(0, 170, 255, 0.5);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 0 15px rgba(0, 170, 255, 0.3);
+        .focus-icon-glow {
+             filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.7));
         }
-        #info-box {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.5);
-            padding: 8px 15px;
-            border-radius: 8px;
-            font-size: 16px;
+        .focus-icon {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
         }
-        #settings-panel {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            pointer-events: all;
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px 2px rgba(34, 211, 238, 0.6); }
+            50% { box-shadow: 0 0 25px 8px rgba(34, 211, 238, 0.4); }
         }
-        .setting-group {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
+        .loading-bar-animated {
+            animation: pulse-glow 2.5s infinite ease-in-out;
         }
-        #settings-panel label {
-            font-size: 14px;
-            font-weight: 500;
+        .section-screen {
+            transition: opacity 0.5s ease-in-out;
         }
-        .slider {
-            -webkit-appearance: none;
-            width: 120px;
-            height: 4px;
-            background: rgba(0, 170, 255, 0.3);
-            border-radius: 5px;
-            outline: none;
+        #circular-timer-container {
+            transition: opacity 0.3s ease-in-out;
         }
-        .slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 18px;
-            height: 18px;
-            background: var(--text-color);
-            cursor: pointer;
-            border-radius: 50%;
-            box-shadow: 0 0 8px var(--glow-color);
+        @keyframes pulse-out {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.2);
+                opacity: 0;
+            }
+        }
+        .timer-pulse-out {
+            animation: pulse-out 0.5s ease-out forwards;
+        }
+        #canvas-ui {
+            transition: opacity 0.5s ease-in-out;
         }
     </style>
 </head>
-<body>
-    <div id="container">
-        <div id="ui-container">
-            <div id="message-box">
-                <h2 id="title">Track Lab</h2>
-                <p id="instructions">Track the highlighted asteroids.</p>
-                <button id="startButton" class="button">Start Game</button>
-            </div>
-            <div id="info-box" style="display: none;">
-                <span id="info-text"></span>
-            </div>
-        </div>
-        <div id="settings-panel">
-            <div class="setting-group">
-                <label for="camera-speed-slider">Camera Speed</label>
-                <input type="range" id="camera-speed-slider" class="slider" min="0" max="0.0005" step="0.00001" value="0.0001">
-            </div>
-            <div class="setting-group">
-                <label id="sphere-count-label" for="sphere-count-slider">8 Asteroids</label>
-                <input type="range" id="sphere-count-slider" class="slider" min="4" max="16" step="2" value="8">
-            </div>
+<body class="text-white antialiased">
+
+    <div id="background-gradient"></div>
+    <div id="grain-container"></div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex flex-col items-center justify-center z-50 transition-opacity duration-500 ease-in-out">
+        <h1 class="text-3xl md:text-4xl font-bold text-cyan-300 tracking-widest uppercase mb-6" style="text-shadow: 0 0 10px rgba(34, 211, 238, 0.5);">Eye Warm-up</h1>
+        <div class="w-1/2 max-w-sm bg-gray-800/50 rounded-full h-4 border-2 border-cyan-500/30 p-1">
+            <div id="loading-bar" class="bg-gradient-to-r from-cyan-400 to-teal-300 h-full rounded-full loading-bar-animated" style="width: 0%; transition: width 1.8s cubic-bezier(0.25, 1, 0.5, 1);"></div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <div id="main-content" class="h-full opacity-0 transition-opacity duration-500 ease-in-out">
+        
+        <!-- Section 1: Guided Exercises -->
+        <section id="guided-exercises" class="section-screen h-full flex-col items-center justify-between p-8 hidden">
+            <div class="w-full text-center relative pt-8">
+                <div id="circular-timer-container" class="absolute top-0 left-0 w-24 h-24 opacity-0">
+                    <svg class="w-full h-full" viewBox="0 0 100 100">
+                        <circle class="text-gray-700" stroke-width="8" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50" />
+                        <circle id="timer-progress" class="text-cyan-400" stroke-width="8" stroke-linecap="round" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50" style="transform: rotate(-90deg); transform-origin: 50% 50%;" />
+                        <text id="timer-text" x="50" y="50" text-anchor="middle" dy=".3em" class="text-2xl font-bold fill-current text-white">00</text>
+                    </svg>
+                </div>
+                <h2 class="text-3xl font-semibold mb-2 text-cyan-300">1. Guided Eye Exercises</h2>
+                <p id="exercisePrompt" class="text-xl text-cyan-200 h-12">Click "Start" to begin.</p>
+            </div>
+            <div class="relative w-full h-64 flex items-center justify-center">
+                <div id="eyes-wrapper" class="flex items-center justify-center gap-4">
+                    <div id="eye-container-left" class="w-32 h-32 md:w-40 md:h-40 eye-container">
+                        <svg id="eyeball-left" class="w-full h-full" viewBox="0 0 100 100"><defs><clipPath id="eyeball-clip-left"><circle cx="50" cy="50" r="45" /></clipPath></defs><g clip-path="url(#eyeball-clip-left)"><circle cx="50" cy="50" r="45" fill="white"/><circle id="pupil-left" cx="50" cy="50" r="20" fill="#0891b2"/><circle id="glare-left" cx="60" cy="40" r="5" fill="rgba(255,255,255,0.7)"/><path id="eyelid-top-left" d="M 0 0 H 100 V 50 Q 50 60 0 50 Z" fill="#1f2937" style="transform: translateY(0px);" /><path id="eyelid-bottom-left" d="M 0 100 H 100 V 50 Q 50 40 0 50 Z" fill="#1f2937" style="transform: translateY(0px);" /></g></svg>
+                    </div>
+                    <div id="eye-container-right" class="w-32 h-32 md:w-40 md:h-40 eye-container">
+                        <svg id="eyeball-right" class="w-full h-full" viewBox="0 0 100 100"><defs><clipPath id="eyeball-clip-right"><circle cx="50" cy="50" r="45" /></clipPath></defs><g clip-path="url(#eyeball-clip-right)"><circle cx="50" cy="50" r="45" fill="white"/><circle id="pupil-right" cx="50" cy="50" r="20" fill="#0891b2"/><circle id="glare-right" cx="60" cy="40" r="5" fill="rgba(255,255,255,0.7)"/><path id="eyelid-top-right" d="M 0 0 H 100 V 50 Q 50 60 0 50 Z" fill="#1f2937" style="transform: translateY(0px);" /><path id="eyelid-bottom-right" d="M 0 100 H 100 V 50 Q 50 40 0 50 Z" fill="#1f2937" style="transform: translateY(0px);" /></g></svg>
+                    </div>
+                </div>
+                <div id="focus-shift-container" class="absolute inset-0 items-center justify-center hidden">
+                    <!-- This container will hold both icon sets stacked on top of each other -->
+                    <div class="relative w-full h-full">
+                         <!-- Near Focus Group -->
+                        <div id="focus-near-group" class="absolute inset-0 flex items-center justify-center gap-8 transition-opacity duration-500">
+                            <svg class="w-24 h-24 focus-icon-glow" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M 10 50 C 10 20, 70 20, 90 50 C 70 80, 10 80, 10 50 Z" fill="white" stroke="#e5e7eb" stroke-width="2"/>
+                                <circle cx="75" cy="50" r="15" fill="#0891b2" stroke="none"/>
+                            </svg>
+                            <svg class="w-24 h-24 text-cyan-400 focus-icon-glow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
+                            </svg>
+                            <svg class="w-24 h-24 text-cyan-400 focus-icon-glow" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M6.75 1a.75.75 0 0 1 .75.75V8a.5.5 0 0 0 1 0V5.467l.086-.004c.317-.012.637-.008.816.027.134.027.294.096.448.182.077.042.15.147.15.314V8a.5.5 0 1 0 1 0V6.435l.106-.01c.316-.024.584-.01.708.04.118.046.3.207.486.43.081.096.15.19.2.259V8.5a.5.5 0 0 0 1 0v-1h.342a1 1 0 0 1 .995 1.1l-.271 2.715a2.5 2.5 0 0 1-.317.991l-1.395 2.442a.5.5 0 0 1-.434.252H6.035a.5.5 0 0 1-.416-.223l-1.433-2.15a1.5 1.5 0 0 1-.243-.666l-.345-3.105a.5.5 0 0 1 .399-.546L5 8.11V9a.5.5 0 0 0 1 0V1.75A.75.75 0 0 1 6.75 1M8.5 4.466V1.75a1.75 1.75 0 1 0-3.5 0v5.34l-1.2.24a1.5 1.5 0 0 0-1.196 1.636l.345 3.106a2.5 2.5 0 0 0 .405 1.11l1.433 2.15A1.5 1.5 0 0 0 6.035 16h6.385a1.5 1.5 0 0 0 1.302-.756l1.395-2.441a3.5 3.5 0 0 0 .444-1.389l.271-2.715a2 2 0 0 0-1.99-2.199h-.581a5 5 0 0 0-.195-.248c-.191-.229-.51-.568-.88-.716-.364-.146-.846-.132-1.158-.108l-.132.012a1.26 1.26 0 0 0-.56-.642 2.6 2.6 0 0 0-.738-.288c-.31-.062-.739-.058-1.05-.046zm2.094 2.025"/>
+                            </svg>
+                        </div>
+                         <!-- Far Focus Group -->
+                        <div id="focus-far-group" class="absolute inset-0 flex items-center justify-center gap-8 transition-opacity duration-500">
+                            <svg class="w-24 h-24 focus-icon-glow" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M 10 50 C 10 20, 70 20, 90 50 C 70 80, 10 80, 10 50 Z" fill="white" stroke="#e5e7eb" stroke-width="2"/>
+                                <circle cx="75" cy="50" r="15" fill="#0891b2" stroke="none"/>
+                            </svg>
+                           <svg class="w-24 h-24 text-cyan-400 focus-icon-glow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
+                            </svg>
+                            <svg class="w-24 h-24 text-cyan-400 focus-icon-glow" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                               <path fill-rule="evenodd" d="M5.04.303A.5.5 0 0 1 5.5 0h5c.2 0 .38.12.46.303l3 7a.5.5 0 0 1-.363.687h-.002q-.225.044-.45.081a33 33 0 0 1-4.645.425V13.5a.5.5 0 1 1-1 0V8.495a33 33 0 0 1-4.645-.425q-.225-.036-.45-.08h-.003a.5.5 0 0 1-.362-.688l3-7ZM3.21 7.116A31 31 0 0 0 8 7.5a31 31 0 0 0 4.791-.384L10.171 1H5.83z"/>
+                               <path d="M6.493 12.574a.5.5 0 0 1-.411.575c-.712.118-1.28.295-1.655.493a1.3 1.3 0 0 0-.37.265.3.3 0 0 0-.052.075l-.001.004-.004.01V14l.002.008.016.033a.6.6 0 0 0 .145.15c.165.13.435.27.813.395.751.25 1.82.414 3.024.414s2.273-.163 3.024-.414c.378-.126.648-.265.813-.395a.6.6 0 0 0 .146-.15l.015-.033L12 14v-.004a.3.3 0 0 0-.057-.09 1.3 1.3 0 0 0-.37-.264c-.376-.198-.943-.375-1.655-.493a.5.5 0 1 1 .164-.986c.77.127 1.452.328 1.957.594C12.5 13 13 13.4 13 14c0 .426-.26.752-.544.977-.29.228-.68.413-1.116.558-.878.293-2.059.465-3.34.465s-2.462-.172-3.34-.465c-.436-.145-.826-.33-1.116-.558C3.26 14.752 3 14.426 3 14c0-.599.5-1 .961-1.243.505-.266 1.187-.467 1.957-.594a.5.5 0 0 1 .575.411"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="pb-16 text-center">
+                <button id="nextExercise" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">Start</button>
+            </div>
+            <div class="absolute bottom-8 right-8">
+                <button id="guided-to-canvas-btn" class="nav-btn bg-cyan-600 hover:bg-cyan-700 p-3 rounded-full" data-target="canvas-exercises">Next &rarr;</button>
+            </div>
+        </section>
+
+        <!-- Section 2 & 3: Canvas Exercises (Merged) -->
+        <section id="canvas-exercises" class="section-screen h-full flex-col items-center justify-center p-8 hidden relative">
+            <canvas id="exerciseCanvas" class="absolute top-0 left-0 w-full h-full z-0"></canvas>
+            <div id="canvas-ui" class="relative z-10 h-full w-full flex flex-col items-center justify-between">
+                <div class="text-center pt-8">
+                    <h2 id="canvas-title" class="text-3xl font-semibold mb-2 text-cyan-300"></h2>
+                    <p id="canvas-description" class="text-gray-300"></p>
+                </div>
+                <div class="pb-16 text-center">
+                    <button id="startTracking" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">Start</button>
+                    <button id="stopTracking" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg transition-colors hidden">Stop</button>
+                    <button id="startRapid" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-6 rounded-lg transition-colors hidden">Start</button>
+                    <button id="stopRapid" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg transition-colors hidden">Stop</button>
+                </div>
+            </div>
+             <div class="absolute bottom-8 left-8 z-20">
+                <button id="canvas-back-btn" class="nav-btn bg-gray-600 hover:bg-gray-700 p-3 rounded-full">&larr; Previous</button>
+            </div>
+            <div class="absolute bottom-8 right-8 z-20">
+                <button id="canvas-next-btn" class="nav-btn bg-cyan-600 hover:bg-cyan-700 p-3 rounded-full">Next &rarr;</button>
+            </div>
+        </section>
+
+        <!-- Section 4: Completion Screen -->
+        <section id="completion-screen" class="section-screen h-full flex-col items-center justify-center p-8 hidden text-center relative">
+            <canvas id="confetti-canvas" class="absolute top-0 left-0 w-full h-full z-0"></canvas>
+            <div class="relative z-10 flex flex-col items-center justify-center">
+                <svg class="w-24 h-24 text-green-400 mb-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h2 class="text-4xl font-bold text-green-300 mb-3">Training Complete!</h2>
+                <p class="text-lg text-gray-300 mb-8">Great job! Your eyes are warmed up and ready.</p>
+                <button id="restart-training" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-lg text-xl transition-all duration-300 ease-in-out transform hover:scale-105">Restart Training</button>
+            </div>
+        </section>
+
+    </div>
 
     <script>
-        // --- Basic Setup ---
-        const container = document.getElementById('container');
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(container.clientWidth, container.clientHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        container.appendChild(renderer.domElement);
+        // ===================================================================================
+        // Loading Screen & Navigation Logic
+        // ===================================================================================
+        const sections = document.querySelectorAll('.section-screen');
+        const navButtons = document.querySelectorAll('.nav-btn');
+        const restartTrainingBtn = document.getElementById('restart-training');
 
-        // --- Game State and Parameters ---
-        let gameState = 'loading';
-        const asteroids = [];
-        const targets = [];
-        let selectedAsteroids = [];
-        let TOTAL_SPHERES = 8;
-        let TARGET_COUNT = 4;
-        const BOX_SIZE = 10;
-        const SPHERE_RADIUS = 0.5;
-        let currentMaxSpeed = 0.05;
-        const ACCELERATION = 0.0001;
-        let currentMovementSpeed = 0;
-        let cameraRotationSpeed = 0.0001;
-        const DEFAULT_ASTEROID_COLOR = 0x8d99ae;
-        
-        // --- Model Loading ---
-        let asteroidModel = null;
-        const loader = new THREE.GLTFLoader();
-        
-        // --- UI Elements ---
-        const startButton = document.getElementById('startButton');
-        const messageBox = document.getElementById('message-box');
-        const title = document.getElementById('title');
-        const instructions = document.getElementById('instructions');
-        const infoBox = document.getElementById('info-box');
-        const infoText = document.getElementById('info-text');
-        const cameraSpeedSlider = document.getElementById('camera-speed-slider');
-        const sphereCountSlider = document.getElementById('sphere-count-slider');
-        const sphereCountLabel = document.getElementById('sphere-count-label');
-        
-        // --- Event Listeners for Settings ---
-        cameraSpeedSlider.addEventListener('input', (e) => cameraRotationSpeed = parseFloat(e.target.value));
-        
-        sphereCountSlider.addEventListener('input', (e) => {
-            TOTAL_SPHERES = parseInt(e.target.value);
-            TARGET_COUNT = TOTAL_SPHERES / 2;
-            sphereCountLabel.textContent = `${TOTAL_SPHERES} Asteroids`;
-            if (gameState !== 'loading') initGame();
-        });
-
-        // --- Lighting ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Reduced ambient light
-        scene.add(ambientLight);
-        
-        const keyLight = new THREE.DirectionalLight(0xffffff, 1.0); // Main light
-        keyLight.position.set(5, 10, 7.5);
-        scene.add(keyLight);
-
-        const fillLight = new THREE.DirectionalLight(0xffffff, 0.4); // Softer fill light
-        fillLight.position.set(-5, -10, -7.5);
-        scene.add(fillLight);
-
-
-        // --- Stylized Bounding Box ---
-        function createStylizedCube(size) {
-            const group = new THREE.Group();
-            const halfSize = size / 2;
-            const cornerSize = 0.25;
-            const edgeRadius = 0.04;
-
-            const edgeMaterial = new THREE.MeshBasicMaterial({ color: 0x00aaff });
-            const cornerMaterial = new THREE.MeshBasicMaterial({ color: 0x00aaff });
-
-            const cornerGeometry = new THREE.BoxGeometry(cornerSize, cornerSize, cornerSize);
-
-            for (let i = 0; i < 8; i++) {
-                const corner = new THREE.Mesh(cornerGeometry, cornerMaterial);
-                corner.position.set(
-                    (i & 1 ? 1 : -1) * halfSize,
-                    (i & 2 ? 1 : -1) * halfSize,
-                    (i & 4 ? 1 : -1) * halfSize
-                );
-                group.add(corner);
-            }
-
-            const edges = [
-                [new THREE.Vector3(-halfSize, -halfSize, -halfSize), new THREE.Vector3(halfSize, -halfSize, -halfSize)],
-                [new THREE.Vector3(-halfSize, -halfSize, -halfSize), new THREE.Vector3(-halfSize, halfSize, -halfSize)],
-                [new THREE.Vector3(-halfSize, -halfSize, -halfSize), new THREE.Vector3(-halfSize, -halfSize, halfSize)],
-                [new THREE.Vector3(halfSize, halfSize, halfSize), new THREE.Vector3(-halfSize, halfSize, halfSize)],
-                [new THREE.Vector3(halfSize, halfSize, halfSize), new THREE.Vector3(halfSize, -halfSize, halfSize)],
-                [new THREE.Vector3(halfSize, halfSize, halfSize), new THREE.Vector3(halfSize, halfSize, -halfSize)],
-                [new THREE.Vector3(-halfSize, halfSize, halfSize), new THREE.Vector3(-halfSize, -halfSize, halfSize)],
-                [new THREE.Vector3(-halfSize, halfSize, halfSize), new THREE.Vector3(-halfSize, halfSize, -halfSize)],
-                [new THREE.Vector3(halfSize, -halfSize, -halfSize), new THREE.Vector3(halfSize, halfSize, -halfSize)],
-                [new THREE.Vector3(halfSize, -halfSize, -halfSize), new THREE.Vector3(halfSize, -halfSize, halfSize)],
-                [new THREE.Vector3(-halfSize, halfSize, -halfSize), new THREE.Vector3(halfSize, halfSize, -halfSize)],
-                [new THREE.Vector3(-halfSize, -halfSize, halfSize), new THREE.Vector3(halfSize, -halfSize, halfSize)],
-            ];
-
-            edges.forEach(edgePoints => {
-                const [start, end] = edgePoints;
-                const path = new THREE.LineCurve3(start, end);
-                const edgeGeometry = new THREE.TubeGeometry(path, 1, edgeRadius, 8, false);
-                const edgeMesh = new THREE.Mesh(edgeGeometry, edgeMaterial);
-                group.add(edgeMesh);
+        function showSection(targetId, isInitialLoad = false) {
+            sections.forEach(section => {
+                if (section.id === targetId) {
+                    section.classList.remove('hidden');
+                    section.classList.add('flex');
+                    setTimeout(() => section.style.opacity = '1', 50);
+                } else {
+                    section.style.opacity = '0';
+                    setTimeout(() => {
+                        section.classList.add('hidden');
+                        section.classList.remove('flex');
+                    }, 500);
+                }
             });
-
-            return group;
+            
+            // Reset or initialize section-specific logic
+            if (targetId === 'guided-exercises') {
+                resetGuidedExercises(isInitialLoad);
+            }
+            
+            if (targetId === 'completion-screen') {
+                setTimeout(launchConfetti, 100);
+            }
         }
-        const stylizedCube = createStylizedCube(BOX_SIZE);
-        scene.add(stylizedCube);
+
+        function cleanupCanvasExercises() {
+            // Stop tracking animation and timer
+            clearTimeout(trackingTimerId);
+            cancelAnimationFrame(trackingAnimationId);
+            trackingAnimationId = null;
+            ball.state = 'idle';
+
+            // Stop rapid movement animation and timer
+            clearTimeout(rapidTimeoutId);
+            clearTimeout(rapidExerciseTimerId);
+            rapidTimeoutId = null;
+            rapidExerciseTimerId = null;
+            
+            // Clear the canvas
+            if(exerciseCtx) exerciseCtx.clearRect(0, 0, exerciseCanvas.width, exerciseCanvas.height);
+        }
+
+        function setupCanvasExercise(type) {
+            const titleEl = document.getElementById('canvas-title');
+            const descEl = document.getElementById('canvas-description');
+            const backBtn = document.getElementById('canvas-back-btn');
+            const nextBtn = document.getElementById('canvas-next-btn');
+            const canvasUI = document.getElementById('canvas-ui');
+
+            cleanupCanvasExercises(); 
+            canvasUI.style.opacity = '1';
+
+            if (type === 'tracking') {
+                titleEl.textContent = '2. Tracking';
+                descEl.textContent = 'Keep your head still and follow the ball with your eyes. (45 seconds)';
+                startTrackingBtn.classList.remove('hidden');
+                stopTrackingBtn.classList.add('hidden');
+                startRapidBtn.classList.add('hidden');
+                stopRapidBtn.classList.add('hidden');
+                backBtn.setAttribute('data-target', 'guided-exercises');
+                nextBtn.textContent = 'Next →';
+                nextBtn.setAttribute('data-target', 'rapid');
+            } else if (type === 'rapid') {
+                titleEl.textContent = '3. Rapid Eye Movement';
+                descEl.textContent = 'The ball will appear in random locations. Move your eyes as quickly as possible to find it. (45 seconds)';
+                startTrackingBtn.classList.add('hidden');
+                stopTrackingBtn.classList.add('hidden');
+                startRapidBtn.classList.remove('hidden');
+                stopRapidBtn.classList.add('hidden');
+                backBtn.setAttribute('data-target', 'tracking');
+                nextBtn.textContent = 'Finish →';
+                nextBtn.setAttribute('data-target', 'completion-screen');
+                drawRapidBall(true);
+            }
+        }
         
-        // --- Fallback procedural asteroid ---
-        function createAsteroidGeometry(radius, detail) {
-            const geometry = new THREE.IcosahedronGeometry(radius, detail);
-            const positionAttribute = geometry.getAttribute('position');
+        function initialEyeOpeningAnimation() {
+            const allEyelids = [eyelidTopLeft, eyelidTopRight, eyelidBottomLeft, eyelidBottomRight];
+            allEyelids.forEach(el => {
+                el.style.transition = 'transform 0.7s ease-out';
+                const isTop = el.id.includes('top');
+                el.style.transform = isTop ? 'translateY(-50px)' : 'translateY(50px)';
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const loadingScreen = document.getElementById('loading-screen');
+            const loadingBar = document.getElementById('loading-bar');
+            const mainContent = document.getElementById('main-content');
             
-            for (let i = 0; i < positionAttribute.count; i++) {
-                const vertex = new THREE.Vector3();
-                vertex.fromBufferAttribute(positionAttribute, i);
-                
-                const displacement = Math.random() * 0.15;
-                vertex.multiplyScalar(1 + displacement);
-                
-                positionAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
-            }
-            return geometry;
-        }
+            setTimeout(() => { loadingBar.style.width = '100%'; }, 100);
 
-        // --- Camera Position ---
-        camera.position.z = 16;
-
-        // --- Raycaster for Mouse Interaction ---
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        // --- Game Initialization ---
-        function initGame() {
-            if (!asteroidModel) return;
-
-            asteroids.forEach(g => scene.remove(g));
-            asteroids.length = 0;
-            targets.length = 0;
-            selectedAsteroids.length = 0;
-
-            for (let i = 0; i < TOTAL_SPHERES; i++) {
-                const asteroid = asteroidModel.clone();
-
-                asteroid.material = new THREE.MeshStandardMaterial({
-                    color: DEFAULT_ASTEROID_COLOR,
-                    flatShading: true,
-                    roughness: 0.8,
-                    metalness: 0.1
-                });
-                
-                asteroid.position.set(
-                    (Math.random() - 0.5) * (BOX_SIZE - SPHERE_RADIUS * 2),
-                    (Math.random() - 0.5) * (BOX_SIZE - SPHERE_RADIUS * 2),
-                    (Math.random() - 0.5) * (BOX_SIZE - SPHERE_RADIUS * 2)
-                );
-
-                asteroid.velocity = new THREE.Vector3((Math.random() - 0.5), (Math.random() - 0.5), (Math.random() - 0.5)).normalize();
-                asteroids.push(asteroid);
-                scene.add(asteroid);
-            }
-
-            const sphereIndices = [...Array(TOTAL_SPHERES).keys()];
-            for (let i = 0; i < TARGET_COUNT; i++) {
-                const randomIndex = Math.floor(Math.random() * sphereIndices.length);
-                const sphereIndex = sphereIndices.splice(randomIndex, 1)[0];
-                targets.push(asteroids[sphereIndex]);
-            }
-            
-            updateUI('initial');
-        }
-
-        // --- UI Management ---
-        function updateUI(state, correctCount = 0) {
-            gameState = state;
-            messageBox.style.display = 'none';
-            infoBox.style.display = 'none';
-            startButton.style.display = 'none';
-
-            switch (state) {
-                case 'loading':
-                    messageBox.style.display = 'flex';
-                    title.textContent = 'Track Lab';
-                    instructions.textContent = 'Loading Model...';
-                    break;
-                case 'initial':
-                    messageBox.style.display = 'flex';
-                    title.textContent = 'Track Lab';
-                    instructions.textContent = `Track the ${TARGET_COUNT} highlighted asteroids.`;
-                    startButton.textContent = 'Start Game';
-                    startButton.style.display = 'block';
-                    asteroids.forEach(a => a.visible = true);
-                    break;
-                case 'memorizing':
-                    infoBox.style.display = 'block';
-                    infoText.textContent = 'Memorize the targets...';
-                    targets.forEach(target => target.material.color.set(0xf6e05e));
-                    break;
-                case 'tracking':
-                    infoBox.style.display = 'block';
-                    infoText.textContent = 'Tracking...';
-                    asteroids.forEach(sphere => {
-                        sphere.material.color.set(DEFAULT_ASTEROID_COLOR);
-                    });
-                    break;
-                case 'selecting':
-                    infoBox.style.display = 'block';
-                    infoText.textContent = `Select ${TARGET_COUNT} asteroids. (${selectedAsteroids.length}/${TARGET_COUNT})`;
-                    break;
-                case 'result':
-                    messageBox.style.display = 'flex';
-                    title.textContent = `You found ${correctCount} of ${TARGET_COUNT} targets!`;
-                    instructions.textContent = 'Well done! Want to try again?';
-                    startButton.textContent = 'Play Again';
-                    startButton.style.display = 'block';
-                    
-                    asteroids.forEach(asteroid => asteroid.visible = false);
-                    targets.forEach(t => {
-                        t.visible = true;
-                        t.material.color.set(selectedAsteroids.includes(t) ? 0x68d391 : 0xf6e05e);
-                    });
-                    selectedAsteroids.forEach(s => {
-                        if (!targets.includes(s)) {
-                           s.visible = true;
-                           s.material.color.set(0xf56565);
-                        }
-                    });
-                    break;
-            }
-        }
-
-        // --- Game Flow ---
-        startButton.addEventListener('click', () => {
-            if (gameState === 'initial' || gameState === 'result') {
-                initGame();
-                startGameFlow();
-            }
-        });
-
-        function startGameFlow() {
-            updateUI('memorizing');
             setTimeout(() => {
-                currentMovementSpeed = currentMaxSpeed / 4;
-                updateUI('tracking');
+                loadingScreen.style.opacity = '0';
                 setTimeout(() => {
-                    gameState = 'selecting';
-                    updateUI('selecting');
-                }, 8000);
+                    loadingScreen.style.display = 'none';
+                    mainContent.style.opacity = '1';
+                    showSection('guided-exercises', true);
+                }, 500);
             }, 2000);
-        }
 
-        // --- Mouse Click Handling ---
-        function onMouseClick(event) {
-            if (gameState !== 'selecting') return;
-            const rect = renderer.domElement.getBoundingClientRect();
-            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(asteroids);
-
-            if (intersects.length > 0) {
-                const clickedAsteroid = intersects[0].object;
-                if (!selectedAsteroids.includes(clickedAsteroid)) {
-                    if (selectedAsteroids.length < TARGET_COUNT) {
-                        selectedAsteroids.push(clickedAsteroid);
-                        clickedAsteroid.material.color.set(0x63b3ed);
-                    }
-                } else {
-                    const index = selectedAsteroids.indexOf(clickedAsteroid);
-                    selectedAsteroids.splice(index, 1);
-                    clickedAsteroid.material.color.set(DEFAULT_ASTEROID_COLOR);
-                }
-                updateUI('selecting');
-                if (selectedAsteroids.length === TARGET_COUNT) endGame();
-            }
-        }
-
-        function endGame() {
-            let correctCount = 0;
-            selectedAsteroids.forEach(selected => {
-                if (targets.includes(selected)) correctCount++;
+            document.getElementById('guided-to-canvas-btn').addEventListener('click', () => {
+                stopAllGuidedAnimations();
+                showSection('canvas-exercises');
+                setupCanvasExercise('tracking');
             });
 
-            if (correctCount === TARGET_COUNT) {
-                currentMaxSpeed *= 1.10;
-            } else if (correctCount <= TARGET_COUNT / 2) {
-                currentMaxSpeed *= 0.90;
-            }
-            currentMaxSpeed = Math.max(0.03, Math.min(0.15, currentMaxSpeed));
+            const canvasBackBtn = document.getElementById('canvas-back-btn');
+            const canvasNextBtn = document.getElementById('canvas-next-btn');
 
-            updateUI('result', correctCount);
+            canvasBackBtn.addEventListener('click', () => {
+                const target = canvasBackBtn.getAttribute('data-target');
+                if (target === 'guided-exercises') {
+                    cleanupCanvasExercises();
+                    showSection(target);
+                } else {
+                    setupCanvasExercise(target);
+                }
+            });
+
+            canvasNextBtn.addEventListener('click', () => {
+                const target = canvasNextBtn.getAttribute('data-target');
+                if (target === 'completion-screen') {
+                    cleanupCanvasExercises();
+                    showSection(target);
+                } else {
+                    setupCanvasExercise(target);
+                }
+            });
+
+            restartTrainingBtn.addEventListener('click', () => {
+                showSection('guided-exercises', true);
+            });
+
+            // Initialize grained.js
+            var options = {
+                animate: true,
+                patternWidth: 100,
+                patternHeight: 100,
+                grainOpacity: 0.15,
+                grainDensity: 1.2,
+                grainWidth: 1,
+                grainHeight: 1
+            };
+            grained('#grain-container', options);
+        });
+
+        // ===================================================================================
+        // Common Variables & Setup
+        // ===================================================================================
+        let trackingAnimationId;
+        let trackingTimerId;
+        let rapidTimeoutId;
+        let rapidExerciseTimerId;
+        window.guidedTimerInterval = null;
+        window.guidedExerciseTimeout = null;
+        window.blinkInterval = null;
+        window.pupilLoopTimeout = null;
+        window.circularMotionId = null;
+        window.tightSqueezeTimeout = null;
+        window.focusShiftTimeout = null;
+        window.vestibularInterval = null;
+        window.directionalSwitchTimeout = null;
+
+        const exerciseCanvas = document.getElementById('exerciseCanvas');
+        const exerciseCtx = exerciseCanvas.getContext('2d');
+
+        function resizeAllCanvases() {
+            exerciseCanvas.width = window.innerWidth;
+            exerciseCanvas.height = window.innerHeight;
         }
 
-        // --- Load Model and Start ---
-        function loadModelAndStart() {
-            updateUI('loading');
-            const modelUrl = 'https://buffedtraining.github.io/game-assets/Assteroid_0702131044_texture.glb';
+        window.addEventListener('resize', resizeAllCanvases);
+        window.addEventListener('load', resizeAllCanvases);
+
+
+        // ===================================================================================
+        // Tracking Logic
+        // ===================================================================================
+        const startTrackingBtn = document.getElementById('startTracking');
+        const stopTrackingBtn = document.getElementById('stopTracking');
+
+        let ball = {
+            x: 100, y: 100,
+            vx: 0, vy: 0,
+            radius: 18,
+            radiusX: 18, radiusY: 18,
+            color: '#22d3ee',
+            initialSpeed: 3.5,
+            maxSpeed: 5.0,
+            angleWobble: 0.04,
+            startTime: null,
+            state: 'idle', // 'idle', 'entering', 'active', 'exiting'
+            introProgress: 0,
+            introDuration: 1500,
+            exitStartTime: null,
+            exitDuration: 1500,
+            exitStartX: 0, exitStartY: 0
+        };
+
+        function easeInOutQuad(t) {
+            return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        }
+
+        function drawTrackingBall() {
+            exerciseCtx.shadowColor = ball.color;
+            exerciseCtx.shadowBlur = 20;
+            exerciseCtx.beginPath();
+            exerciseCtx.ellipse(ball.x, ball.y, ball.radiusX, ball.radiusY, 0, 0, Math.PI * 2);
+            exerciseCtx.fillStyle = ball.color;
+            exerciseCtx.fill();
+            exerciseCtx.closePath();
+            exerciseCtx.shadowBlur = 0;
+        }
+
+        function updateTracking() {
+            exerciseCtx.clearRect(0, 0, exerciseCanvas.width, exerciseCanvas.height);
             
-            loader.load(modelUrl, (gltf) => {
-                let loadedMesh = null;
-                gltf.scene.traverse((child) => {
-                    if (child.isMesh) {
-                        loadedMesh = child;
-                    }
-                });
-                
-                if (loadedMesh) {
-                    asteroidModel = loadedMesh;
-                     // Scale the model to fit our game
-                    const box = new THREE.Box3().setFromObject(asteroidModel);
-                    const size = box.getSize(new THREE.Vector3());
-                    const scale = (SPHERE_RADIUS * 2) / size.y;
-                    asteroidModel.scale.set(scale, scale, scale);
-                } else {
-                    // Fallback if no mesh is found in the gltf
-                    asteroidModel = new THREE.Mesh(createAsteroidGeometry(SPHERE_RADIUS, 2));
+            if (ball.state === 'entering') {
+                const elapsed = performance.now() - ball.startTime;
+                const progress = Math.min(1, elapsed / ball.introDuration);
+                const easedProgress = easeInOutQuad(progress);
+                const startY = exerciseCanvas.height + ball.radius;
+                const endY = exerciseCanvas.height / 2;
+                ball.x = exerciseCanvas.width / 2;
+                ball.y = startY + (endY - startY) * easedProgress;
+                drawTrackingBall();
+                if (progress >= 1) {
+                    ball.state = 'active';
+                    ball.startTime = performance.now();
+                    const startAngle = -Math.PI / 2;
+                    ball.vx = Math.cos(startAngle) * ball.initialSpeed;
+                    ball.vy = Math.sin(startAngle) * ball.initialSpeed;
                 }
+            } else if (ball.state === 'active') {
+                let totalRepulsionX = 0, totalRepulsionY = 0;
+                const avoidanceMargin = 70, turnForce = 0.15;
+                if (ball.x < avoidanceMargin) totalRepulsionX += (avoidanceMargin - ball.x) * turnForce * 0.1;
+                if (ball.x > exerciseCanvas.width - avoidanceMargin) totalRepulsionX -= (ball.x - (exerciseCanvas.width - avoidanceMargin)) * turnForce * 0.1;
+                if (ball.y < avoidanceMargin) totalRepulsionY += (avoidanceMargin - ball.y) * turnForce * 0.1;
+                if (ball.y > exerciseCanvas.height - avoidanceMargin) totalRepulsionY -= (ball.y - (exerciseCanvas.height - avoidanceMargin)) * turnForce * 0.1;
+                ball.vx += totalRepulsionX;
+                ball.vy += totalRepulsionY;
 
-                initGame();
-            }, undefined, (error) => {
-                console.error('An error happened while loading the model. This is often a CORS issue. Ensure the model is hosted on a server with CORS enabled.', error);
-                instructions.textContent = 'Error loading model. Using fallback.';
-                asteroidModel = new THREE.Mesh(createAsteroidGeometry(SPHERE_RADIUS, 2));
-                initGame();
-            });
+                const centerX = exerciseCanvas.width / 2, centerY = exerciseCanvas.height / 2;
+                ball.vx += (centerX - ball.x) * 0.0003;
+                ball.vy += (centerY - ball.y) * 0.0003;
+                
+                const maxDistance = exerciseCanvas.width / 2;
+                const distanceFromCenter = Math.sqrt((centerX - ball.x)**2 + (centerY - ball.y)**2);
+                const normalizedDistance = Math.min(1, distanceFromCenter / maxDistance);
+                const turnChance = 0.02 + 0.10 * (1 - normalizedDistance);
+                let angle = Math.atan2(ball.vy, ball.vx), speed = Math.sqrt(ball.vx**2 + ball.vy**2);
+                angle += (Math.random() - 0.5) * ball.angleWobble;
+                if (Math.random() < turnChance) angle += (Math.random() - 0.5) * (Math.PI / 2);
+                ball.vx = Math.cos(angle) * speed;
+                ball.vy = Math.sin(angle) * speed;
+
+                if (ball.startTime) {
+                    const elapsedTime = performance.now() - ball.startTime;
+                    if (elapsedTime > 9000) ball.maxSpeed = 8.5;
+                }
+                const currentSpeed = Math.sqrt(ball.vx**2 + ball.vy**2);
+                if (currentSpeed > ball.maxSpeed) { ball.vx *= ball.maxSpeed / currentSpeed; ball.vy *= ball.maxSpeed / currentSpeed; }
+                if (currentSpeed < ball.maxSpeed) { ball.vx *= 1.01; ball.vy *= 1.01; }
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+
+                const repulsionMagnitude = Math.sqrt(totalRepulsionX**2 + totalRepulsionY**2);
+                const squashFactor = Math.min(1, repulsionMagnitude * 0.5);
+                ball.radiusX = ball.radius * (1 - squashFactor * 0.3);
+                ball.radiusY = ball.radius * (1 + squashFactor * 0.3);
+                ball.radiusX += (ball.radius - ball.radiusX) * 0.1;
+                ball.radiusY += (ball.radius - ball.radiusY) * 0.1;
+                drawTrackingBall();
+            } else if (ball.state === 'exiting') {
+                const elapsed = performance.now() - ball.exitStartTime;
+                const progress = Math.min(1, elapsed / ball.exitDuration);
+                const easedProgress = easeInOutQuad(progress);
+                const endX = exerciseCanvas.width / 2, endY = exerciseCanvas.height / 2;
+                ball.x = ball.exitStartX + (endX - ball.exitStartX) * easedProgress;
+                ball.y = ball.exitStartY + (endY - ball.exitStartY) * easedProgress;
+                drawTrackingBall();
+                if (progress >= 1) {
+                    cancelAnimationFrame(trackingAnimationId);
+                    trackingAnimationId = null;
+                    ball.state = 'idle';
+                    stopTrackingBtn.classList.add('hidden');
+                    startTrackingBtn.classList.remove('hidden');
+                    document.getElementById('canvas-ui').style.opacity = '1';
+                }
+            }
+            if (ball.state !== 'idle') {
+                trackingAnimationId = requestAnimationFrame(updateTracking);
+            }
+        }
+
+        function endTrackingSequence(force = false) {
+            if (force) {
+                clearTimeout(trackingTimerId);
+                cancelAnimationFrame(trackingAnimationId);
+                trackingAnimationId = null;
+                ball.state = 'idle';
+                return;
+            }
+            if (ball.state === 'idle' || ball.state === 'exiting') return;
+            clearTimeout(trackingTimerId);
+            ball.state = 'exiting';
+            ball.exitStartTime = performance.now();
+            ball.exitStartX = ball.x;
+            ball.exitStartY = ball.y;
+        }
+
+        startTrackingBtn.addEventListener('click', () => {
+            if (ball.state !== 'idle') return;
+            document.getElementById('canvas-ui').style.opacity = '0';
+            resizeAllCanvases();
+            ball.state = 'entering';
+            ball.startTime = performance.now();
+            ball.maxSpeed = 5.0; // Ensure maxSpeed is reset on start
+            startTrackingBtn.classList.add('hidden');
+            stopTrackingBtn.classList.remove('hidden');
+            updateTracking();
+            trackingTimerId = setTimeout(endTrackingSequence, 45000);
+        });
+
+        stopTrackingBtn.addEventListener('click', () => {
+            document.getElementById('canvas-ui').style.opacity = '1';
+            endTrackingSequence(false);
+        });
+
+
+        // ===================================================================================
+        // Rapid Movement Logic
+        // ===================================================================================
+        const startRapidBtn = document.getElementById('startRapid');
+        const stopRapidBtn = document.getElementById('stopRapid');
+        
+        let rapidStartTime;
+        let rapidInterval = 750;
+        const minRapidInterval = 250;
+        const rapidSpeedUpFactor = 0.985;
+
+        let rapidBall = {
+            radius: 18, // Increased size
+            color: '#22d3ee'
+        };
+
+        function drawRapidBall(isFirst = false) {
+            exerciseCtx.clearRect(0, 0, exerciseCanvas.width, exerciseCanvas.height);
+            const padding = rapidBall.radius + 10;
+            let x, y;
+
+            if (isFirst) {
+                x = exerciseCanvas.width / 2;
+                y = exerciseCanvas.height / 2;
+            } else {
+                x = Math.random() * (exerciseCanvas.width - padding * 2) + padding;
+                y = Math.random() * (exerciseCanvas.height - padding * 2) + padding;
+            }
+
+            exerciseCtx.shadowColor = rapidBall.color;
+            exerciseCtx.shadowBlur = 20;
+            exerciseCtx.beginPath();
+            exerciseCtx.arc(x, y, rapidBall.radius, 0, Math.PI * 2);
+            exerciseCtx.fillStyle = rapidBall.color;
+            exerciseCtx.fill();
+            exerciseCtx.closePath();
+            exerciseCtx.shadowBlur = 0;
         }
         
-        // --- Animation Loop ---
-        function animate() {
-            requestAnimationFrame(animate);
-
-            if (gameState === 'tracking') {
-                if (currentMovementSpeed < currentMaxSpeed) {
-                    currentMovementSpeed = Math.min(currentMaxSpeed, currentMovementSpeed + ACCELERATION);
-                }
-                asteroids.forEach(asteroid => {
-                    asteroid.rotation.x += asteroid.velocity.y * 0.02;
-                    asteroid.rotation.y += asteroid.velocity.x * 0.02;
-
-                    const moveVector = asteroid.velocity.clone().multiplyScalar(currentMovementSpeed);
-                    asteroid.position.add(moveVector);
-                    const halfBox = BOX_SIZE / 2 - SPHERE_RADIUS;
-                    if (asteroid.position.x > halfBox || asteroid.position.x < -halfBox) {
-                        asteroid.velocity.x *= -1;
-                        asteroid.position.x = Math.max(-halfBox, Math.min(halfBox, asteroid.position.x));
-                    }
-                    if (asteroid.position.y > halfBox || asteroid.position.y < -halfBox) {
-                        asteroid.velocity.y *= -1;
-                        asteroid.position.y = Math.max(-halfBox, Math.min(halfBox, asteroid.position.y));
-                    }
-                    if (asteroid.position.z > halfBox || asteroid.position.z < -halfBox) {
-                        asteroid.velocity.z *= -1;
-                        asteroid.position.z = Math.max(-halfBox, Math.min(halfBox, asteroid.position.z));
-                    }
-                });
-                for (let i = 0; i < asteroids.length; i++) {
-                    for (let j = i + 1; j < asteroids.length; j++) {
-                        const a1 = asteroids[i];
-                        const a2 = asteroids[j];
-                        const distanceVec = new THREE.Vector3().subVectors(a1.position, a2.position);
-                        if (distanceVec.length() < SPHERE_RADIUS * 2) {
-                            const overlap = (SPHERE_RADIUS * 2) - distanceVec.length();
-                            const correction = distanceVec.clone().normalize().multiplyScalar(overlap / 2);
-                            a1.position.add(correction);
-                            a2.position.sub(correction);
-                            const v1 = a1.velocity.clone().multiplyScalar(currentMovementSpeed);
-                            const v2 = a2.velocity.clone().multiplyScalar(currentMovementSpeed);
-                            const vDiff = new THREE.Vector3().subVectors(v1, v2);
-                            const xDiff = new THREE.Vector3().subVectors(a1.position, a2.position);
-                            if (vDiff.dot(xDiff) < 0) {
-                                const dotProduct = vDiff.dot(xDiff);
-                                const scale = dotProduct / xDiff.lengthSq();
-                                const impulse = xDiff.clone().multiplyScalar(scale);
-                                v1.sub(impulse);
-                                v2.add(impulse);
-                                a1.velocity.copy(v1.normalize());
-                                a2.velocity.copy(v2.normalize());
-                            }
-                        }
-                    }
-                }
+        function runRapidSequence() {
+            drawRapidBall();
+            
+            if (performance.now() - rapidStartTime > 6000) {
+                rapidInterval = Math.max(minRapidInterval, rapidInterval * rapidSpeedUpFactor);
             }
-            const time = Date.now() * cameraRotationSpeed;
-            const cameraOrbitRadius = 16;
-            camera.position.x = Math.cos(time) * cameraOrbitRadius;
-            camera.position.z = Math.sin(time) * cameraOrbitRadius;
-            camera.lookAt(scene.position);
-
-            renderer.render(scene, camera);
+            
+            rapidTimeoutId = setTimeout(runRapidSequence, rapidInterval);
         }
 
-        // --- Event Listeners ---
-        window.addEventListener('resize', () => {
-            camera.aspect = container.clientWidth / container.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(container.clientWidth, container.clientHeight);
-        });
-        window.addEventListener('click', onMouseClick);
+        startRapidBtn.addEventListener('click', () => {
+            if (!rapidTimeoutId) {
+                document.getElementById('canvas-ui').style.opacity = '0';
+                resizeAllCanvases();
+                rapidInterval = 750;
+                rapidStartTime = performance.now();
+                
+                drawRapidBall(true);
+                rapidTimeoutId = setTimeout(runRapidSequence, rapidInterval);
 
-        // --- Start ---
-        loadModelAndStart();
-        animate();
+                startRapidBtn.classList.add('hidden');
+                stopRapidBtn.classList.remove('hidden');
+
+                clearTimeout(rapidExerciseTimerId);
+                rapidExerciseTimerId = setTimeout(() => stopRapidBtn.click(), 45000);
+            }
+        });
+
+        stopRapidBtn.addEventListener('click', () => {
+            if (!rapidTimeoutId && !rapidExerciseTimerId) return;
+            document.getElementById('canvas-ui').style.opacity = '1';
+            clearTimeout(rapidTimeoutId);
+            clearTimeout(rapidExerciseTimerId);
+            rapidTimeoutId = null;
+            rapidExerciseTimerId = null;
+            if(exerciseCtx) exerciseCtx.clearRect(0, 0, exerciseCanvas.width, exerciseCanvas.height);
+            drawRapidBall(true); // Draw one last ball in the center
+            stopRapidBtn.classList.add('hidden');
+            startRapidBtn.classList.remove('hidden');
+        });
+
+
+        // ===================================================================================
+        // Guided Exercises Logic
+        // ===================================================================================
+        const nextExerciseBtn = document.getElementById('nextExercise');
+        const exercisePrompt = document.getElementById('exercisePrompt');
+        const guidedTimerContainer = document.getElementById('circular-timer-container');
+        const timerProgress = document.getElementById('timer-progress');
+        const timerText = document.getElementById('timer-text');
+        const radius = timerProgress.r.baseVal.value;
+        const circumference = radius * 2 * Math.PI;
+        timerProgress.style.strokeDasharray = circumference;
+        
+        const eyesWrapper = document.getElementById('eyes-wrapper');
+        const focusShiftContainer = document.getElementById('focus-shift-container');
+        const focusNearGroup = document.getElementById('focus-near-group');
+        const focusFarGroup = document.getElementById('focus-far-group');
+
+        const eyeContainerLeft = document.getElementById('eye-container-left');
+        const pupilLeft = document.getElementById('pupil-left');
+        const glareLeft = document.getElementById('glare-left');
+        const eyelidTopLeft = document.getElementById('eyelid-top-left');
+        const eyelidBottomLeft = document.getElementById('eyelid-bottom-left');
+
+        const eyeContainerRight = document.getElementById('eye-container-right');
+        const pupilRight = document.getElementById('pupil-right');
+        const glareRight = document.getElementById('glare-right');
+        const eyelidTopRight = document.getElementById('eyelid-top-right');
+        const eyelidBottomRight = document.getElementById('eyelid-bottom-right');
+
+        const exercises = [
+            { text: "Blink for 30 seconds.", action: () => animateBlink(), duration: 30000 },
+            { text: "Keep eyes fixed forward. Gently move head side-to-side.", action: () => animateVestibular(), duration: 30000 },
+            { text: "Directional Gazing: L/R then U/D.", action: () => startCombinedDirectionalLoop(), duration: 30000 },
+            { text: "Follow the circular motion (30 seconds).", action: () => startFullCircularSequence(), duration: 30000 },
+            { text: "Close eyes tight for 5s, open, repeat 3x.", action: () => animateTightSqueeze(), duration: 18000 },
+            { text: "Focus on your hand, then a distant object. Repeat 3x.", action: () => animateFocusShift(), duration: 24000 },
+            { text: "Close your eyes gently and relax for 30 seconds.", action: () => animateGentleClose(), duration: 30000 },
+        ];
+
+        let currentExerciseIndex = -1;
+
+        function resetPupilAndContainerState(transition = 'all 0.25s ease-out') {
+             // Reset pupil attributes
+            [pupilLeft, pupilRight].forEach(p => {
+                p.style.transition = transition;
+                p.setAttribute('cx', 50);
+                p.setAttribute('cy', 50);
+            });
+            [glareLeft, glareRight].forEach(g => {
+                g.style.transition = transition;
+                g.setAttribute('cx', 60);
+                g.setAttribute('cy', 40);
+            });
+
+            // Reset eye container position
+            [eyeContainerLeft, eyeContainerRight].forEach(c => {
+                c.style.transition = transition;
+                c.style.transform = 'translate(0px, 0px)';
+            });
+        }
+
+        function stopAllGuidedAnimations(keepLidsClosed = false) {
+            // Clear all intervals and timeouts
+            if (window.blinkInterval) clearInterval(window.blinkInterval);
+            if (window.pupilLoopTimeout) clearTimeout(window.pupilLoopTimeout);
+            if (window.gentleCloseTimeout) clearTimeout(window.gentleCloseTimeout);
+            if (window.circularMotionId) cancelAnimationFrame(window.circularMotionId);
+            if (window.tightSqueezeTimeout) clearTimeout(window.tightSqueezeTimeout);
+            if (window.focusShiftTimeout) clearTimeout(window.focusShiftTimeout);
+            if (window.guidedExerciseTimeout) clearTimeout(window.guidedExerciseTimeout);
+            if (window.guidedTimerInterval) clearInterval(window.guidedTimerInterval);
+            if (window.vestibularInterval) clearInterval(window.vestibularInterval);
+            if (window.directionalSwitchTimeout) clearTimeout(window.directionalSwitchTimeout);
+            
+            // Nullify all handles
+            window.blinkInterval = null;
+            window.pupilLoopTimeout = null;
+            window.gentleCloseTimeout = null;
+            window.circularMotionId = null;
+            window.tightSqueezeTimeout = null;
+            window.focusShiftTimeout = null;
+            window.guidedExerciseTimeout = null;
+            window.guidedTimerInterval = null;
+            window.vestibularInterval = null;
+            window.directionalSwitchTimeout = null;
+
+            // Reset UI elements
+            guidedTimerContainer.classList.remove('timer-pulse-out');
+            guidedTimerContainer.style.opacity = '0';
+            focusShiftContainer.classList.add('hidden');
+            focusShiftContainer.classList.remove('flex');
+
+            resetPupilAndContainerState();
+
+            if (!keepLidsClosed) {
+                [eyelidTopLeft, eyelidTopRight, eyelidBottomLeft, eyelidBottomRight].forEach(el => {
+                    el.style.transition = 'transform 0.25s ease-out';
+                    const isTop = el.id.includes('top');
+                    el.style.transform = isTop ? 'translateY(-50px)' : 'translateY(50px)';
+                });
+            }
+        }
+        
+        function resetGuidedExercises(isInitial = false) {
+            currentExerciseIndex = -1;
+            exercisePrompt.textContent = 'Click "Start" to begin.';
+            nextExerciseBtn.textContent = 'Start';
+            stopAllGuidedAnimations(isInitial);
+            showEyes();
+            movePupil(50, 50);
+            
+            if (isInitial) {
+                setTimeout(() => {
+                    initialEyeOpeningAnimation();
+                }, 200);
+            }
+        }
+
+        function startGuidedTimer(duration) {
+            const startTime = Date.now();
+            guidedTimerContainer.classList.remove('timer-pulse-out');
+            guidedTimerContainer.style.opacity = '1';
+
+            function updateTimer() {
+                const elapsed = Date.now() - startTime;
+                const progress = elapsed / duration;
+                const offset = circumference - progress * circumference;
+                timerProgress.style.strokeDashoffset = offset;
+                
+                const remainingSeconds = Math.ceil((duration - elapsed) / 1000);
+                timerText.textContent = remainingSeconds;
+
+                if (progress >= 1) {
+                    clearInterval(window.guidedTimerInterval);
+                    window.guidedTimerInterval = null;
+                    stopAllGuidedAnimations(); // Stop the eye movement
+                    guidedTimerContainer.classList.add('timer-pulse-out'); // Add pulse class
+                }
+            }
+            
+            if (window.guidedTimerInterval) clearInterval(window.guidedTimerInterval);
+            updateTimer();
+            window.guidedTimerInterval = setInterval(updateTimer, 50);
+        }
+
+        function showEyes() {
+            eyesWrapper.classList.remove('hidden');
+            focusShiftContainer.classList.add('hidden');
+            focusShiftContainer.classList.remove('flex');
+        }
+
+        function showFocusShift() {
+            eyesWrapper.classList.add('hidden');
+            focusShiftContainer.classList.remove('hidden');
+            focusShiftContainer.classList.add('flex');
+        }
+
+        function movePupil(cx, cy, transition = 'cx 0.5s ease-in-out, cy 0.5s ease-in-out') {
+            showEyes();
+            [pupilLeft, pupilRight, glareLeft, glareRight].forEach(el => {
+                 el.style.transition = transition;
+            });
+            
+            pupilLeft.setAttribute('cx', cx);
+            pupilLeft.setAttribute('cy', cy);
+            glareLeft.setAttribute('cx', cx + 10);
+            glareLeft.setAttribute('cy', cy - 10);
+            
+            pupilRight.setAttribute('cx', cx);
+            pupilRight.setAttribute('cy', cy);
+            glareRight.setAttribute('cx', cx + 10);
+            glareRight.setAttribute('cy', cy - 10);
+
+            const translateX = (cx - 50) * 0.1;
+            const translateY = (cy - 50) * 0.1;
+            eyeContainerLeft.style.transform = `translate(${translateX}px, ${translateY}px)`;
+            eyeContainerRight.style.transform = `translate(${translateX}px, ${translateY}px)`;
+        }
+
+        function animateVestibular() {
+            showEyes();
+            
+            movePupil(50, 50);
+            [eyeContainerLeft, eyeContainerRight].forEach(c => {
+                c.style.transition = 'none';
+                c.style.transform = 'translateX(0px)';
+            });
+
+            setTimeout(() => {
+                const moveDistance = 20;
+                let direction = 1;
+
+                function loop() {
+                    const headTranslateX = moveDistance * direction;
+                    const pupilTranslateX = 16 * direction;
+
+                    [eyeContainerLeft, eyeContainerRight].forEach(c => {
+                        c.style.transition = 'transform 1.2s ease-in-out';
+                        c.style.transform = `translateX(${headTranslateX}px)`;
+                    });
+
+                    const newPupilCx = 50 - pupilTranslateX;
+                    [pupilLeft, pupilRight].forEach(p => {
+                        p.style.transition = 'cx 1.2s ease-in-out';
+                        p.setAttribute('cx', newPupilCx);
+                    });
+                    [glareLeft, glareRight].forEach(g => {
+                        g.style.transition = 'cx 1.2s ease-in-out';
+                        g.setAttribute('cx', newPupilCx + 10);
+                    });
+                    
+                    direction *= -1;
+                }
+                
+                if(window.vestibularInterval) clearInterval(window.vestibularInterval);
+                loop();
+                window.vestibularInterval = setInterval(loop, 1400);
+            }, 100);
+        }
+
+        function startCombinedDirectionalLoop() {
+            const horizontalSequence = [{ cx: 25, cy: 50 }, { cx: 75, cy: 50 }];
+            const verticalSequence = [{ cx: 50, cy: 25 }, { cx: 50, cy: 75 }];
+            const interval = 1500;
+
+            let h_index = 0;
+            let v_index = 0;
+
+            function horizontalLoop() {
+                exercisePrompt.textContent = "Look Left & Right";
+                const nextPos = horizontalSequence[h_index];
+                movePupil(nextPos.cx, nextPos.cy);
+                h_index = (h_index + 1) % horizontalSequence.length;
+                window.pupilLoopTimeout = setTimeout(horizontalLoop, interval);
+            }
+
+            function verticalLoop() {
+                exercisePrompt.textContent = "Look Up & Down";
+                const nextPos = verticalSequence[v_index];
+                movePupil(nextPos.cx, nextPos.cy);
+                v_index = (v_index + 1) % verticalSequence.length;
+                window.pupilLoopTimeout = setTimeout(verticalLoop, interval);
+            }
+
+            horizontalLoop();
+
+            window.directionalSwitchTimeout = setTimeout(() => {
+                clearTimeout(window.pupilLoopTimeout);
+                verticalLoop();
+            }, 15000);
+        }
+
+        function runCircularLoop(options) {
+            const { 
+                duration,
+                direction, 
+                onComplete, 
+                startAngle = -Math.PI / 2,
+                maxSpeed = 0.025
+            } = options;
+
+            let start = performance.now();
+            let currentSpeed = 0;
+            const acceleration = 0.00015;
+            const radius = 35; 
+            let currentAngle = startAngle;
+
+            function loop(timestamp) {
+                const elapsed = timestamp - start;
+                
+                if (elapsed < 2000) {
+                    currentSpeed = Math.min(maxSpeed, currentSpeed + acceleration);
+                } else if (elapsed > duration - 2000) {
+                    currentSpeed = Math.max(0, currentSpeed - acceleration);
+                } else {
+                    currentSpeed = maxSpeed;
+                }
+                
+                const cx = 50 + Math.cos(currentAngle) * radius;
+                const cy = 50 + Math.sin(currentAngle) * radius;
+                movePupil(cx, cy, 'none'); 
+
+                const angleIncrement = currentSpeed * (direction === 'clockwise' ? 1 : -1);
+                currentAngle += angleIncrement;
+
+                if (elapsed < duration) {
+                    window.circularMotionId = requestAnimationFrame(loop);
+                } else {
+                    window.circularMotionId = null;
+                    if (onComplete) onComplete(currentAngle);
+                }
+            }
+            window.circularMotionId = requestAnimationFrame(loop);
+        }
+
+        function startFullCircularSequence() {
+            showEyes();
+            const halfDuration = 15000;
+            runCircularLoop({
+                duration: halfDuration,
+                direction: 'clockwise',
+                onComplete: (endAngle) => {
+                    runCircularLoop({
+                        duration: halfDuration,
+                        direction: 'counter-clockwise',
+                        startAngle: endAngle,
+                        onComplete: () => {
+                            movePupil(50, 50);
+                        }
+                    });
+                }
+            });
+        }
+
+        function animateBlink() {
+            showEyes();
+            const blinkRate = 1200; 
+
+            const blink = () => {
+                [eyelidTopLeft, eyelidTopRight, eyelidBottomLeft, eyelidBottomRight].forEach(el => {
+                    el.style.transition = 'transform 0.1s ease-in';
+                });
+                eyelidTopLeft.style.transform = 'translateY(0px)';
+                eyelidTopRight.style.transform = 'translateY(0px)';
+                eyelidBottomLeft.style.transform = 'translateY(0px)'; 
+                eyelidBottomRight.style.transform = 'translateY(0px)'; 
+                
+                setTimeout(() => {
+                    [eyelidTopLeft, eyelidTopRight, eyelidBottomLeft, eyelidBottomRight].forEach(el => {
+                        el.style.transition = 'transform 0.25s ease-out';
+                        const isTop = el.id.includes('top');
+                        el.style.transform = isTop ? 'translateY(-50px)' : 'translateY(50px)';
+                    });
+                }, 150);
+            };
+
+            blink();
+            window.blinkInterval = setInterval(blink, blinkRate);
+        }
+
+        function animateGentleClose() {
+            showEyes();
+            movePupil(50, 50);
+
+            setTimeout(() => {
+                [eyelidTopLeft, eyelidTopRight, eyelidBottomLeft, eyelidBottomRight].forEach(el => {
+                    el.style.transition = 'transform 1.5s ease-out';
+                });
+                eyelidTopLeft.style.transform = 'translateY(0px)';
+                eyelidTopRight.style.transform = 'translateY(0px)';
+                eyelidBottomLeft.style.transform = 'translateY(0px)';
+                eyelidBottomRight.style.transform = 'translateY(0px)';
+            }, 100);
+
+            window.gentleCloseTimeout = setTimeout(() => {
+                [eyelidTopLeft, eyelidTopRight, eyelidBottomLeft, eyelidBottomRight].forEach(el => {
+                    const isTop = el.id.includes('top');
+                    el.style.transform = isTop ? 'translateY(-50px)' : 'translateY(50px)';
+                });
+            }, 30100);
+        }
+        
+        function animateTightSqueeze() {
+            showEyes();
+            movePupil(50, 50);
+            let count = 0;
+            const repetitions = 3;
+
+            function squeezeLoop() {
+                if (count >= repetitions) {
+                    return;
+                }
+                
+                [eyelidTopLeft, eyelidTopRight, eyelidBottomLeft, eyelidBottomRight].forEach(el => {
+                    el.style.transition = 'transform 0.4s ease-in';
+                });
+                eyelidTopLeft.style.transform = 'translateY(0px)';
+                eyelidTopRight.style.transform = 'translateY(0px)';
+                eyelidBottomLeft.style.transform = 'translateY(0px)';
+                eyelidBottomRight.style.transform = 'translateY(0px)';
+
+                window.tightSqueezeTimeout = setTimeout(() => {
+                    [eyelidTopLeft, eyelidTopRight, eyelidBottomLeft, eyelidBottomRight].forEach(el => {
+                        el.style.transition = 'transform 0.3s ease-out';
+                        const isTop = el.id.includes('top');
+                        el.style.transform = isTop ? 'translateY(-50px)' : 'translateY(50px)';
+                    });
+
+                    count++;
+                    window.tightSqueezeTimeout = setTimeout(squeezeLoop, 1000);
+                }, 5000);
+            }
+            setTimeout(squeezeLoop, 600);
+        }
+
+        function animateFocusShift() {
+            showFocusShift();
+            let count = 0;
+            const repetitions = 3;
+
+            function focusLoop() {
+                if (count >= repetitions) {
+                    return;
+                }
+
+                exercisePrompt.textContent = "Focus on your hand (near).";
+                focusNearGroup.style.opacity = '1';
+                focusFarGroup.style.opacity = '0';
+
+                window.focusShiftTimeout = setTimeout(() => {
+                    exercisePrompt.textContent = "Focus on a distant object (far).";
+                    focusNearGroup.style.opacity = '0';
+                    focusFarGroup.style.opacity = '1';
+
+                    window.focusShiftTimeout = setTimeout(() => {
+                        count++;
+                        focusLoop();
+                    }, 4000);
+                }, 4000);
+            }
+            focusLoop();
+        }
+
+        nextExerciseBtn.addEventListener('click', () => {
+            if (currentExerciseIndex === -1) {
+                nextExerciseBtn.textContent = 'Next Exercise';
+            }
+
+            // Stop any currently running animations and timers
+            stopAllGuidedAnimations();
+            
+            // Force the browser to recalculate styles before starting the new animation
+            void guidedTimerContainer.offsetHeight;
+
+            currentExerciseIndex++;
+            if (currentExerciseIndex >= exercises.length) {
+                showSection('canvas-exercises');
+                setupCanvasExercise('tracking');
+                return;
+            }
+
+            const exercise = exercises[currentExerciseIndex];
+            exercisePrompt.textContent = exercise.text;
+            
+            if (exercise.duration) {
+                startGuidedTimer(exercise.duration);
+            }
+            
+            exercise.action();
+
+            if (currentExerciseIndex === exercises.length - 1) {
+                nextExerciseBtn.textContent = 'Start Next Module';
+            }
+        });
+        
+        // ===================================================================================
+        // Confetti Logic
+        // ===================================================================================
+        function launchConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            if (!canvas) return;
+
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const myConfetti = confetti.create(canvas, {
+                resize: true,
+                useWorker: false // Changed to false to prevent error
+            });
+
+            myConfetti({
+                particleCount: 150,
+                spread: 80,
+                origin: { y: 0.6 },
+                colors: ['#22d3ee', '#67e8f9', '#a5f3fc', '#ffffff']
+            });
+
+            setTimeout(() => {
+                myConfetti({
+                    particleCount: 100,
+                    angle: 60,
+                    spread: 65,
+                    origin: { x: 0 },
+                    colors: ['#22d3ee', '#67e8f9', '#a5f3fc', '#ffffff']
+                });
+            }, 250);
+            
+            setTimeout(() => {
+                myConfetti({
+                    particleCount: 100,
+                    angle: 120,
+                    spread: 65,
+                    origin: { x: 1 },
+                    colors: ['#22d3ee', '#67e8f9', '#a5f3fc', '#ffffff']
+                });
+            }, 400);
+        }
+
     </script>
 </body>
 </html>
