@@ -25,6 +25,15 @@
             background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #082f49);
             background-size: 400% 400%;
         }
+        #grid-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(to right, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
         .eye-container {
             transition: transform 0.5s ease-in-out;
             /* Added glow effect to the eyes */
@@ -89,6 +98,7 @@
 <body class="text-white antialiased">
 
     <div id="background-gradient"></div>
+    <div id="grid-overlay"></div>
     
     <!-- Corner Buttons -->
     <div class="fixed top-4 right-4 flex gap-2 z-50">
@@ -125,12 +135,12 @@
                 <h2 class="text-3xl font-semibold mb-2 text-cyan-300">1. Guided Eye Exercises</h2>
                 <p id="exercisePrompt" class="text-xl text-cyan-200 h-12">Click "Start" to begin.</p>
             </div>
-            <div class="relative w-full h-96 flex items-center justify-center">
+            <div class="relative w-full h-80 flex items-center justify-center">
                 <div id="eyes-wrapper" class="flex items-center justify-center gap-4">
-                    <div id="eye-container-left" class="w-64 h-64 md:w-80 md:h-80 eye-container">
+                    <div id="eye-container-left" class="w-52 h-52 md:w-64 md:h-64 eye-container">
                         <svg id="eyeball-left" class="w-full h-full" viewBox="0 0 100 100"><defs><clipPath id="eyeball-clip-left"><circle cx="50" cy="50" r="45" /></clipPath></defs><g clip-path="url(#eyeball-clip-left)"><circle cx="50" cy="50" r="45" fill="white"/><circle id="pupil-left" cx="50" cy="50" r="20" fill="#0891b2"/><circle id="glare-left" cx="60" cy="40" r="5" fill="rgba(255,255,255,0.7)"/><path id="eyelid-top-left" d="M 0 0 H 100 V 50 Q 50 60 0 50 Z" fill="#1f2937" style="transform: translateY(0px);" /><path id="eyelid-bottom-left" d="M 0 100 H 100 V 50 Q 50 40 0 50 Z" fill="#1f2937" style="transform: translateY(0px);" /></g></svg>
                     </div>
-                    <div id="eye-container-right" class="w-64 h-64 md:w-80 md:h-80 eye-container">
+                    <div id="eye-container-right" class="w-52 h-52 md:w-64 md:h-64 eye-container">
                         <svg id="eyeball-right" class="w-full h-full" viewBox="0 0 100 100"><defs><clipPath id="eyeball-clip-right"><circle cx="50" cy="50" r="45" /></clipPath></defs><g clip-path="url(#eyeball-clip-right)"><circle cx="50" cy="50" r="45" fill="white"/><circle id="pupil-right" cx="50" cy="50" r="20" fill="#0891b2"/><circle id="glare-right" cx="60" cy="40" r="5" fill="rgba(255,255,255,0.7)"/><path id="eyelid-top-right" d="M 0 0 H 100 V 50 Q 50 60 0 50 Z" fill="#1f2937" style="transform: translateY(0px);" /><path id="eyelid-bottom-right" d="M 0 100 H 100 V 50 Q 50 40 0 50 Z" fill="#1f2937" style="transform: translateY(0px);" /></g></svg>
                     </div>
                 </div>
@@ -437,9 +447,9 @@
         let ball = {
             x: 100, y: 100,
             vx: 0, vy: 0,
-            radius: 36,
-            radiusX: 36,
-            radiusY: 36,
+            radius: 29,
+            radiusX: 29,
+            radiusY: 29,
             color: '#22d3ee',
             initialSpeed: 3.5,
             maxSpeed: 5.0,
@@ -594,7 +604,7 @@
         const rapidSpeedUpFactor = 0.985;
 
         let rapidBall = {
-            radius: 36, // Increased size
+            radius: 29, // Increased size
             color: '#22d3ee'
         };
 
@@ -672,8 +682,8 @@
         const dualRapidSpeedUpFactor = 0.985;
 
         let dualBalls = {
-            ball1: { radius: 36, color: '#22d3ee' }, // Cyan
-            ball2: { radius: 36, color: '#facc15' }  // Yellow-400
+            ball1: { radius: 29, color: '#22d3ee' }, // Cyan
+            ball2: { radius: 29, color: '#facc15' }  // Yellow-400
         };
 
         function drawDualRapidBalls(isFirst = false) {
