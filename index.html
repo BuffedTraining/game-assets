@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Eye Training Exercise</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/grained@0.0.2/grained.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -25,18 +24,6 @@
             z-index: -2;
             background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #082f49);
             background-size: 400% 400%;
-            animation: gradientBG 25s ease infinite;
-        }
-        #grain-container {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: -1; /* Sits above the gradient but behind content */
-        }
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
         }
         .eye-container {
             transition: transform 0.5s ease-in-out;
@@ -75,15 +62,45 @@
         .timer-pulse-out {
             animation: pulse-out 0.5s ease-out forwards;
         }
-        #canvas-ui {
+        #canvas-ui, .ui-container {
             transition: opacity 0.5s ease-in-out;
+        }
+        .ui-hidden {
+            opacity: 0 !important;
+            pointer-events: none;
+        }
+        .glass-btn {
+            background-color: rgba(203, 213, 225, 0.1); /* slate-300 with 10% opacity */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px); /* For Safari */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .glass-btn:hover {
+            background-color: rgba(203, 213, 225, 0.2); /* slate-300 with 20% opacity */
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(0, 0, 0, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
         }
     </style>
 </head>
 <body class="text-white antialiased">
 
     <div id="background-gradient"></div>
-    <div id="grain-container"></div>
+    
+    <!-- Corner Buttons -->
+    <div class="fixed top-4 right-4 flex gap-2 z-50">
+        <button id="hide-ui-btn" class="glass-btn p-3 rounded-full">
+            <svg id="hide-icon" class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+            <svg id="show-icon" class="w-6 h-6 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+        </button>
+        <button id="fullscreen-btn" class="glass-btn p-3 rounded-full">
+            <svg id="fullscreen-enter-icon" class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" /></svg>
+            <svg id="fullscreen-exit-icon" class="w-6 h-6 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" /></svg>
+        </button>
+    </div>
 
     <!-- Loading Screen -->
     <div id="loading-screen" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex flex-col items-center justify-center z-50 transition-opacity duration-500 ease-in-out">
@@ -96,11 +113,11 @@
     <div id="main-content" class="h-full opacity-0 transition-opacity duration-500 ease-in-out">
         
         <!-- Section 1: Guided Exercises -->
-        <section id="guided-exercises" class="section-screen h-full flex-col items-center justify-between p-8 hidden">
-            <div class="w-full text-center relative pt-8">
-                <div id="circular-timer-container" class="absolute top-0 left-0 w-24 h-24 opacity-0">
+        <section id="guided-exercises" class="section-screen h-full flex-col items-center justify-between p-8 hidden relative">
+            <div class="w-full text-center pt-8 ui-container">
+                <div id="circular-timer-container" class="absolute bottom-8 left-8 w-24 h-24 opacity-0">
                     <svg class="w-full h-full" viewBox="0 0 100 100">
-                        <circle class="text-gray-700" stroke-width="8" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50" />
+                        <circle stroke-width="8" fill="transparent" r="40" cx="50" cy="50" style="stroke: rgba(203, 213, 225, 0.2);" />
                         <circle id="timer-progress" class="text-cyan-400" stroke-width="8" stroke-linecap="round" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50" style="transform: rotate(-90deg); transform-origin: 50% 50%;" />
                         <text id="timer-text" x="50" y="50" text-anchor="middle" dy=".3em" class="text-2xl font-bold fill-current text-white">00</text>
                     </svg>
@@ -150,59 +167,119 @@
                     </div>
                 </div>
             </div>
-            <div class="pb-16 text-center">
-                <button id="nextExercise" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">Start</button>
+            <div class="pb-16 text-center ui-container">
+                <button id="nextExercise" class="glass-btn text-white font-bold py-3 px-6 rounded-lg">Start</button>
             </div>
-            <div class="absolute bottom-8 right-8">
-                <button id="guided-to-canvas-btn" class="nav-btn bg-cyan-600 hover:bg-cyan-700 p-3 rounded-full" data-target="canvas-exercises">Next &rarr;</button>
+            <div class="absolute bottom-8 right-8 ui-container">
+                <button id="guided-to-canvas-btn" class="nav-btn glass-btn p-3 rounded-full" data-target="canvas-exercises">Next &rarr;</button>
             </div>
         </section>
 
-        <!-- Section 2 & 3: Canvas Exercises (Merged) -->
+        <!-- Section 2, 3, 4: Canvas Exercises (Merged) -->
         <section id="canvas-exercises" class="section-screen h-full flex-col items-center justify-center p-8 hidden relative">
             <canvas id="exerciseCanvas" class="absolute top-0 left-0 w-full h-full z-0"></canvas>
-            <div id="canvas-ui" class="relative z-10 h-full w-full flex flex-col items-center justify-between">
+            <div id="canvas-ui" class="relative z-10 h-full w-full flex flex-col items-center justify-between ui-container">
                 <div class="text-center pt-8">
                     <h2 id="canvas-title" class="text-3xl font-semibold mb-2 text-cyan-300"></h2>
                     <p id="canvas-description" class="text-gray-300"></p>
                 </div>
                 <div class="pb-16 text-center">
-                    <button id="startTracking" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">Start</button>
-                    <button id="stopTracking" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg transition-colors hidden">Stop</button>
-                    <button id="startRapid" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-6 rounded-lg transition-colors hidden">Start</button>
-                    <button id="stopRapid" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg transition-colors hidden">Stop</button>
+                    <button id="startTracking" class="glass-btn text-white font-bold py-3 px-6 rounded-lg hidden">Start</button>
+                    <button id="stopTracking" class="glass-btn text-white font-bold py-3 px-6 rounded-lg hidden">Stop</button>
+                    <button id="startRapid" class="glass-btn text-white font-bold py-3 px-6 rounded-lg hidden">Start</button>
+                    <button id="stopRapid" class="glass-btn text-white font-bold py-3 px-6 rounded-lg hidden">Stop</button>
+                    <button id="startDualRapid" class="glass-btn text-white font-bold py-3 px-6 rounded-lg hidden">Start</button>
+                    <button id="stopDualRapid" class="glass-btn text-white font-bold py-3 px-6 rounded-lg hidden">Stop</button>
                 </div>
             </div>
-             <div class="absolute bottom-8 left-8 z-20">
-                <button id="canvas-back-btn" class="nav-btn bg-gray-600 hover:bg-gray-700 p-3 rounded-full">&larr; Previous</button>
-            </div>
-            <div class="absolute bottom-8 right-8 z-20">
-                <button id="canvas-next-btn" class="nav-btn bg-cyan-600 hover:bg-cyan-700 p-3 rounded-full">Next &rarr;</button>
+             <div class="absolute bottom-8 right-8 z-20 ui-container">
+                <button id="canvas-next-btn" class="nav-btn glass-btn p-3 rounded-full">Next &rarr;</button>
             </div>
         </section>
 
-        <!-- Section 4: Completion Screen -->
+        <!-- Section 5: Completion Screen -->
         <section id="completion-screen" class="section-screen h-full flex-col items-center justify-center p-8 hidden text-center relative">
             <canvas id="confetti-canvas" class="absolute top-0 left-0 w-full h-full z-0"></canvas>
-            <div class="relative z-10 flex flex-col items-center justify-center">
+            <div class="relative z-10 flex flex-col items-center justify-center ui-container">
                 <svg class="w-24 h-24 text-green-400 mb-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <h2 class="text-4xl font-bold text-green-300 mb-3">Training Complete!</h2>
                 <p class="text-lg text-gray-300 mb-8">Great job! Your eyes are warmed up and ready.</p>
-                <button id="restart-training" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-lg text-xl transition-all duration-300 ease-in-out transform hover:scale-105">Restart Training</button>
+                <button id="restart-training" class="glass-btn text-white font-bold py-3 px-8 rounded-lg text-xl">Restart Training</button>
             </div>
         </section>
 
     </div>
 
     <script>
+    document.addEventListener('DOMContentLoaded', () => {
         // ===================================================================================
-        // Loading Screen & Navigation Logic
+        // Global State & Element Variables
         // ===================================================================================
         const sections = document.querySelectorAll('.section-screen');
         const navButtons = document.querySelectorAll('.nav-btn');
         const restartTrainingBtn = document.getElementById('restart-training');
+        
+        const nextExerciseBtn = document.getElementById('nextExercise');
+        const exercisePrompt = document.getElementById('exercisePrompt');
+        const guidedTimerContainer = document.getElementById('circular-timer-container');
+        const timerProgress = document.getElementById('timer-progress');
+        const timerText = document.getElementById('timer-text');
+        const eyesWrapper = document.getElementById('eyes-wrapper');
+        const focusShiftContainer = document.getElementById('focus-shift-container');
+        const focusNearGroup = document.getElementById('focus-near-group');
+        const focusFarGroup = document.getElementById('focus-far-group');
+        const eyeContainerLeft = document.getElementById('eye-container-left');
+        const pupilLeft = document.getElementById('pupil-left');
+        const glareLeft = document.getElementById('glare-left');
+        const eyelidTopLeft = document.getElementById('eyelid-top-left');
+        const eyelidBottomLeft = document.getElementById('eyelid-bottom-left');
+        const eyeContainerRight = document.getElementById('eye-container-right');
+        const pupilRight = document.getElementById('pupil-right');
+        const glareRight = document.getElementById('glare-right');
+        const eyelidTopRight = document.getElementById('eyelid-top-right');
+        const eyelidBottomRight = document.getElementById('eyelid-bottom-right');
+
+        const exerciseCanvas = document.getElementById('exerciseCanvas');
+        const exerciseCtx = exerciseCanvas.getContext('2d');
+        const startTrackingBtn = document.getElementById('startTracking');
+        const stopTrackingBtn = document.getElementById('stopTracking');
+        const startRapidBtn = document.getElementById('startRapid');
+        const stopRapidBtn = document.getElementById('stopRapid');
+        const startDualRapidBtn = document.getElementById('startDualRapid');
+        const stopDualRapidBtn = document.getElementById('stopDualRapid');
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const fullscreenEnterIcon = document.getElementById('fullscreen-enter-icon');
+        const fullscreenExitIcon = document.getElementById('fullscreen-exit-icon');
+        const hideUiBtn = document.getElementById('hide-ui-btn');
+        const hideIcon = document.getElementById('hide-icon');
+        const showIcon = document.getElementById('show-icon');
+        const uiContainers = document.querySelectorAll('.ui-container');
+
+        const radius = timerProgress.r.baseVal.value;
+        const circumference = radius * 2 * Math.PI;
+        timerProgress.style.strokeDasharray = circumference;
+
+        let trackingAnimationId;
+        let trackingTimerId;
+        let rapidTimeoutId;
+        let rapidExerciseTimerId;
+        let dualRapidTimeoutId;
+        let dualRapidExerciseTimerId;
+        window.guidedTimerInterval = null;
+        window.guidedExerciseTimeout = null;
+        window.blinkInterval = null;
+        window.pupilLoopTimeout = null;
+        window.circularMotionId = null;
+        window.tightSqueezeTimeout = null;
+        window.focusShiftTimeout = null;
+        window.vestibularInterval = null;
+        window.directionalSwitchTimeout = null;
+        let currentExerciseIndex = -1;
+        // ===================================================================================
+        // Loading Screen & Navigation Logic
+        // ===================================================================================
 
         function showSection(targetId, isInitialLoad = false) {
             sections.forEach(section => {
@@ -241,6 +318,12 @@
             clearTimeout(rapidExerciseTimerId);
             rapidTimeoutId = null;
             rapidExerciseTimerId = null;
+
+            // Stop dual rapid movement animation and timer
+            clearTimeout(dualRapidTimeoutId);
+            clearTimeout(dualRapidExerciseTimerId);
+            dualRapidTimeoutId = null;
+            dualRapidExerciseTimerId = null;
             
             // Clear the canvas
             if(exerciseCtx) exerciseCtx.clearRect(0, 0, exerciseCanvas.width, exerciseCanvas.height);
@@ -249,34 +332,40 @@
         function setupCanvasExercise(type) {
             const titleEl = document.getElementById('canvas-title');
             const descEl = document.getElementById('canvas-description');
-            const backBtn = document.getElementById('canvas-back-btn');
             const nextBtn = document.getElementById('canvas-next-btn');
             const canvasUI = document.getElementById('canvas-ui');
 
             cleanupCanvasExercises(); 
             canvasUI.style.opacity = '1';
+            
+            // Hide all buttons first
+            startTrackingBtn.classList.add('hidden');
+            stopTrackingBtn.classList.add('hidden');
+            startRapidBtn.classList.add('hidden');
+            stopRapidBtn.classList.add('hidden');
+            startDualRapidBtn.classList.add('hidden');
+            stopDualRapidBtn.classList.add('hidden');
 
             if (type === 'tracking') {
                 titleEl.textContent = '2. Tracking';
                 descEl.textContent = 'Keep your head still and follow the ball with your eyes. (45 seconds)';
                 startTrackingBtn.classList.remove('hidden');
-                stopTrackingBtn.classList.add('hidden');
-                startRapidBtn.classList.add('hidden');
-                stopRapidBtn.classList.add('hidden');
-                backBtn.setAttribute('data-target', 'guided-exercises');
                 nextBtn.textContent = 'Next →';
                 nextBtn.setAttribute('data-target', 'rapid');
             } else if (type === 'rapid') {
                 titleEl.textContent = '3. Rapid Eye Movement';
                 descEl.textContent = 'The ball will appear in random locations. Move your eyes as quickly as possible to find it. (45 seconds)';
-                startTrackingBtn.classList.add('hidden');
-                stopTrackingBtn.classList.add('hidden');
                 startRapidBtn.classList.remove('hidden');
-                stopRapidBtn.classList.add('hidden');
-                backBtn.setAttribute('data-target', 'tracking');
+                nextBtn.textContent = 'Next →';
+                nextBtn.setAttribute('data-target', 'dualRapid');
+                drawRapidBall(true);
+            } else if (type === 'dualRapid') {
+                titleEl.textContent = '4. Dual Ball Movement';
+                descEl.textContent = 'Two balls will appear randomly. Keep your eyes moving between them. (45 seconds)';
+                startDualRapidBtn.classList.remove('hidden');
                 nextBtn.textContent = 'Finish →';
                 nextBtn.setAttribute('data-target', 'completion-screen');
-                drawRapidBall(true);
+                drawDualRapidBalls(true);
             }
         }
         
@@ -289,87 +378,48 @@
             });
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const loadingScreen = document.getElementById('loading-screen');
-            const loadingBar = document.getElementById('loading-bar');
-            const mainContent = document.getElementById('main-content');
-            
-            setTimeout(() => { loadingBar.style.width = '100%'; }, 100);
+        
+        const loadingScreen = document.getElementById('loading-screen');
+        const loadingBar = document.getElementById('loading-bar');
+        const mainContent = document.getElementById('main-content');
+        
+        setTimeout(() => { loadingBar.style.width = '100%'; }, 100);
 
+        setTimeout(() => {
+            loadingScreen.style.opacity = '0';
             setTimeout(() => {
-                loadingScreen.style.opacity = '0';
-                setTimeout(() => {
-                    loadingScreen.style.display = 'none';
-                    mainContent.style.opacity = '1';
-                    showSection('guided-exercises', true);
-                }, 500);
-            }, 2000);
-
-            document.getElementById('guided-to-canvas-btn').addEventListener('click', () => {
-                stopAllGuidedAnimations();
-                showSection('canvas-exercises');
-                setupCanvasExercise('tracking');
-            });
-
-            const canvasBackBtn = document.getElementById('canvas-back-btn');
-            const canvasNextBtn = document.getElementById('canvas-next-btn');
-
-            canvasBackBtn.addEventListener('click', () => {
-                const target = canvasBackBtn.getAttribute('data-target');
-                if (target === 'guided-exercises') {
-                    cleanupCanvasExercises();
-                    showSection(target);
-                } else {
-                    setupCanvasExercise(target);
-                }
-            });
-
-            canvasNextBtn.addEventListener('click', () => {
-                const target = canvasNextBtn.getAttribute('data-target');
-                if (target === 'completion-screen') {
-                    cleanupCanvasExercises();
-                    showSection(target);
-                } else {
-                    setupCanvasExercise(target);
-                }
-            });
-
-            restartTrainingBtn.addEventListener('click', () => {
+                loadingScreen.style.display = 'none';
+                mainContent.style.opacity = '1';
                 showSection('guided-exercises', true);
-            });
+            }, 500);
+        }, 2000);
 
-            // Initialize grained.js
-            var options = {
-                animate: true,
-                patternWidth: 100,
-                patternHeight: 100,
-                grainOpacity: 0.15,
-                grainDensity: 1.2,
-                grainWidth: 1,
-                grainHeight: 1
-            };
-            grained('#grain-container', options);
+        document.getElementById('guided-to-canvas-btn').addEventListener('click', () => {
+            stopAllGuidedAnimations();
+            showSection('canvas-exercises');
+            setupCanvasExercise('tracking');
+        });
+
+        const canvasNextBtn = document.getElementById('canvas-next-btn');
+
+        canvasNextBtn.addEventListener('click', () => {
+            const target = canvasNextBtn.getAttribute('data-target');
+            cleanupCanvasExercises();
+            if (target === 'completion-screen') {
+                showSection(target);
+            } else {
+                showSection('canvas-exercises');
+                setupCanvasExercise(target);
+            }
+        });
+
+        restartTrainingBtn.addEventListener('click', () => {
+            showSection('guided-exercises', true);
         });
 
         // ===================================================================================
         // Common Variables & Setup
         // ===================================================================================
-        let trackingAnimationId;
-        let trackingTimerId;
-        let rapidTimeoutId;
-        let rapidExerciseTimerId;
-        window.guidedTimerInterval = null;
-        window.guidedExerciseTimeout = null;
-        window.blinkInterval = null;
-        window.pupilLoopTimeout = null;
-        window.circularMotionId = null;
-        window.tightSqueezeTimeout = null;
-        window.focusShiftTimeout = null;
-        window.vestibularInterval = null;
-        window.directionalSwitchTimeout = null;
-
-        const exerciseCanvas = document.getElementById('exerciseCanvas');
-        const exerciseCtx = exerciseCanvas.getContext('2d');
 
         function resizeAllCanvases() {
             exerciseCanvas.width = window.innerWidth;
@@ -383,8 +433,6 @@
         // ===================================================================================
         // Tracking Logic
         // ===================================================================================
-        const startTrackingBtn = document.getElementById('startTracking');
-        const stopTrackingBtn = document.getElementById('stopTracking');
 
         let ball = {
             x: 100, y: 100,
@@ -394,7 +442,7 @@
             color: '#22d3ee',
             initialSpeed: 3.5,
             maxSpeed: 5.0,
-            angleWobble: 0.04,
+            angleWobble: 0.01, // Further reduced wobbliness
             startTime: null,
             state: 'idle', // 'idle', 'entering', 'active', 'exiting'
             introProgress: 0,
@@ -440,31 +488,31 @@
                 }
             } else if (ball.state === 'active') {
                 let totalRepulsionX = 0, totalRepulsionY = 0;
-                const avoidanceMargin = 70, turnForce = 0.15;
-                if (ball.x < avoidanceMargin) totalRepulsionX += (avoidanceMargin - ball.x) * turnForce * 0.1;
-                if (ball.x > exerciseCanvas.width - avoidanceMargin) totalRepulsionX -= (ball.x - (exerciseCanvas.width - avoidanceMargin)) * turnForce * 0.1;
-                if (ball.y < avoidanceMargin) totalRepulsionY += (avoidanceMargin - ball.y) * turnForce * 0.1;
-                if (ball.y > exerciseCanvas.height - avoidanceMargin) totalRepulsionY -= (ball.y - (exerciseCanvas.height - avoidanceMargin)) * turnForce * 0.1;
+                const avoidanceMargin = 100, turnForce = 0.2; // Increased margin and force
+                if (ball.x < avoidanceMargin) totalRepulsionX += (avoidanceMargin - ball.x) * turnForce * 0.2;
+                if (ball.x > exerciseCanvas.width - avoidanceMargin) totalRepulsionX -= (ball.x - (exerciseCanvas.width - avoidanceMargin)) * turnForce * 0.2;
+                if (ball.y < avoidanceMargin) totalRepulsionY += (avoidanceMargin - ball.y) * turnForce * 0.2;
+                if (ball.y > exerciseCanvas.height - avoidanceMargin) totalRepulsionY -= (ball.y - (exerciseCanvas.height - avoidanceMargin)) * turnForce * 0.2;
                 ball.vx += totalRepulsionX;
                 ball.vy += totalRepulsionY;
 
                 const centerX = exerciseCanvas.width / 2, centerY = exerciseCanvas.height / 2;
-                ball.vx += (centerX - ball.x) * 0.0003;
-                ball.vy += (centerY - ball.y) * 0.0003;
+                ball.vx += (centerX - ball.x) * 0.0004; // Increased centering force
+                ball.vy += (centerY - ball.y) * 0.0004; // Increased centering force
                 
                 const maxDistance = exerciseCanvas.width / 2;
                 const distanceFromCenter = Math.sqrt((centerX - ball.x)**2 + (centerY - ball.y)**2);
                 const normalizedDistance = Math.min(1, distanceFromCenter / maxDistance);
-                const turnChance = 0.02 + 0.10 * (1 - normalizedDistance);
+                const turnChance = 0.04 + 0.15 * (1 - normalizedDistance); // Increased turn chance
                 let angle = Math.atan2(ball.vy, ball.vx), speed = Math.sqrt(ball.vx**2 + ball.vy**2);
                 angle += (Math.random() - 0.5) * ball.angleWobble;
-                if (Math.random() < turnChance) angle += (Math.random() - 0.5) * (Math.PI / 2);
+                if (Math.random() < turnChance) angle += (Math.random() - 0.5) * (Math.PI / 1.5); // Increased turn angle
                 ball.vx = Math.cos(angle) * speed;
                 ball.vy = Math.sin(angle) * speed;
 
                 if (ball.startTime) {
                     const elapsedTime = performance.now() - ball.startTime;
-                    if (elapsedTime > 9000) ball.maxSpeed = 8.5;
+                    if (elapsedTime > 5000) ball.maxSpeed = 8.0; // Reduced max speed
                 }
                 const currentSpeed = Math.sqrt(ball.vx**2 + ball.vy**2);
                 if (currentSpeed > ball.maxSpeed) { ball.vx *= ball.maxSpeed / currentSpeed; ball.vy *= ball.maxSpeed / currentSpeed; }
@@ -535,12 +583,9 @@
             endTrackingSequence(false);
         });
 
-
         // ===================================================================================
         // Rapid Movement Logic
         // ===================================================================================
-        const startRapidBtn = document.getElementById('startRapid');
-        const stopRapidBtn = document.getElementById('stopRapid');
         
         let rapidStartTime;
         let rapidInterval = 750;
@@ -616,47 +661,119 @@
             startRapidBtn.classList.remove('hidden');
         });
 
+        // ===================================================================================
+        // Dual Rapid Movement Logic
+        // ===================================================================================
+        
+        let dualRapidStartTime;
+        let dualRapidInterval = 900;
+        const minDualRapidInterval = 350;
+        const dualRapidSpeedUpFactor = 0.985;
+
+        let dualBalls = {
+            ball1: { radius: 18, color: '#22d3ee' }, // Cyan
+            ball2: { radius: 18, color: '#facc15' }  // Yellow-400
+        };
+
+        function drawDualRapidBalls(isFirst = false) {
+            exerciseCtx.clearRect(0, 0, exerciseCanvas.width, exerciseCanvas.height);
+            const padding = dualBalls.ball1.radius + 10;
+            let x1, y1, x2, y2;
+
+            if (isFirst) {
+                x1 = exerciseCanvas.width / 4;
+                y1 = exerciseCanvas.height / 2;
+                x2 = exerciseCanvas.width * 3 / 4;
+                y2 = exerciseCanvas.height / 2;
+            } else {
+                x1 = Math.random() * (exerciseCanvas.width - padding * 2) + padding;
+                y1 = Math.random() * (exerciseCanvas.height - padding * 2) + padding;
+                
+                const minDistance = (dualBalls.ball1.radius + dualBalls.ball2.radius) * 1.5; // Ensure they don't overlap + have a small gap
+                let distance;
+                
+                do {
+                    x2 = Math.random() * (exerciseCanvas.width - padding * 2) + padding;
+                    y2 = Math.random() * (exerciseCanvas.height - padding * 2) + padding;
+                    distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                } while (distance < minDistance);
+            }
+
+            // Draw ball 1 (Cyan)
+            exerciseCtx.shadowColor = dualBalls.ball1.color;
+            exerciseCtx.shadowBlur = 20;
+            exerciseCtx.beginPath();
+            exerciseCtx.arc(x1, y1, dualBalls.ball1.radius, 0, Math.PI * 2);
+            exerciseCtx.fillStyle = dualBalls.ball1.color;
+            exerciseCtx.fill();
+            exerciseCtx.closePath();
+
+            // Draw ball 2 (Yellow)
+            exerciseCtx.shadowColor = dualBalls.ball2.color;
+            exerciseCtx.shadowBlur = 20;
+            exerciseCtx.beginPath();
+            exerciseCtx.arc(x2, y2, dualBalls.ball2.radius, 0, Math.PI * 2);
+            exerciseCtx.fillStyle = dualBalls.ball2.color;
+            exerciseCtx.fill();
+            exerciseCtx.closePath();
+
+            exerciseCtx.shadowBlur = 0;
+        }
+        
+        function runDualRapidSequence() {
+            drawDualRapidBalls();
+            
+            if (performance.now() - dualRapidStartTime > 6000) {
+                dualRapidInterval = Math.max(minDualRapidInterval, dualRapidInterval * dualRapidSpeedUpFactor);
+            }
+            
+            dualRapidTimeoutId = setTimeout(runDualRapidSequence, dualRapidInterval);
+        }
+
+        startDualRapidBtn.addEventListener('click', () => {
+            if (!dualRapidTimeoutId) {
+                document.getElementById('canvas-ui').style.opacity = '0';
+                resizeAllCanvases();
+                dualRapidInterval = 900;
+                dualRapidStartTime = performance.now();
+                
+                drawDualRapidBalls(true);
+                dualRapidTimeoutId = setTimeout(runDualRapidSequence, dualRapidInterval);
+
+                startDualRapidBtn.classList.add('hidden');
+                stopDualRapidBtn.classList.remove('hidden');
+
+                clearTimeout(dualRapidExerciseTimerId);
+                dualRapidExerciseTimerId = setTimeout(() => stopDualRapidBtn.click(), 45000);
+            }
+        });
+
+        stopDualRapidBtn.addEventListener('click', () => {
+            if (!dualRapidTimeoutId && !dualRapidExerciseTimerId) return;
+            document.getElementById('canvas-ui').style.opacity = '1';
+            clearTimeout(dualRapidTimeoutId);
+            clearTimeout(dualRapidExerciseTimerId);
+            dualRapidTimeoutId = null;
+            dualRapidExerciseTimerId = null;
+            if(exerciseCtx) exerciseCtx.clearRect(0, 0, exerciseCanvas.width, exerciseCanvas.height);
+            drawDualRapidBalls(true); // Draw one last set of balls in the center
+            stopDualRapidBtn.classList.add('hidden');
+            startDualRapidBtn.classList.remove('hidden');
+        });
+
 
         // ===================================================================================
         // Guided Exercises Logic
         // ===================================================================================
-        const nextExerciseBtn = document.getElementById('nextExercise');
-        const exercisePrompt = document.getElementById('exercisePrompt');
-        const guidedTimerContainer = document.getElementById('circular-timer-container');
-        const timerProgress = document.getElementById('timer-progress');
-        const timerText = document.getElementById('timer-text');
-        const radius = timerProgress.r.baseVal.value;
-        const circumference = radius * 2 * Math.PI;
-        timerProgress.style.strokeDasharray = circumference;
-        
-        const eyesWrapper = document.getElementById('eyes-wrapper');
-        const focusShiftContainer = document.getElementById('focus-shift-container');
-        const focusNearGroup = document.getElementById('focus-near-group');
-        const focusFarGroup = document.getElementById('focus-far-group');
-
-        const eyeContainerLeft = document.getElementById('eye-container-left');
-        const pupilLeft = document.getElementById('pupil-left');
-        const glareLeft = document.getElementById('glare-left');
-        const eyelidTopLeft = document.getElementById('eyelid-top-left');
-        const eyelidBottomLeft = document.getElementById('eyelid-bottom-left');
-
-        const eyeContainerRight = document.getElementById('eye-container-right');
-        const pupilRight = document.getElementById('pupil-right');
-        const glareRight = document.getElementById('glare-right');
-        const eyelidTopRight = document.getElementById('eyelid-top-right');
-        const eyelidBottomRight = document.getElementById('eyelid-bottom-right');
-
         const exercises = [
-            { text: "Blink for 30 seconds.", action: () => animateBlink(), duration: 30000 },
-            { text: "Keep eyes fixed forward. Gently move head side-to-side.", action: () => animateVestibular(), duration: 30000 },
-            { text: "Directional Gazing: L/R then U/D.", action: () => startCombinedDirectionalLoop(), duration: 30000 },
-            { text: "Follow the circular motion (30 seconds).", action: () => startFullCircularSequence(), duration: 30000 },
+            { text: "Blink for 20 seconds.", action: () => animateBlink(), duration: 20000 },
+            { text: "Keep eyes fixed forward. Gently move head side-to-side. (20s)", action: () => animateVestibular(), duration: 20000 },
+            { text: "Directional Gazing: L/R then U/D. (20s)", action: () => startCombinedDirectionalLoop(), duration: 20000 },
+            { text: "Follow the circular motion (20 seconds).", action: () => startFullCircularSequence(), duration: 20000 },
             { text: "Close eyes tight for 5s, open, repeat 3x.", action: () => animateTightSqueeze(), duration: 18000 },
             { text: "Focus on your hand, then a distant object. Repeat 3x.", action: () => animateFocusShift(), duration: 24000 },
-            { text: "Close your eyes gently and relax for 30 seconds.", action: () => animateGentleClose(), duration: 30000 },
+            { text: "Close your eyes gently and relax for 20 seconds.", action: () => animateGentleClose(), duration: 20000 },
         ];
-
-        let currentExerciseIndex = -1;
 
         function resetPupilAndContainerState(transition = 'all 0.25s ease-out') {
              // Reset pupil attributes
@@ -731,7 +848,7 @@
             if (isInitial) {
                 setTimeout(() => {
                     initialEyeOpeningAnimation();
-                }, 200);
+                }, 2000);
             }
         }
 
@@ -866,7 +983,7 @@
             window.directionalSwitchTimeout = setTimeout(() => {
                 clearTimeout(window.pupilLoopTimeout);
                 verticalLoop();
-            }, 15000);
+            }, 10000);
         }
 
         function runCircularLoop(options) {
@@ -914,7 +1031,7 @@
 
         function startFullCircularSequence() {
             showEyes();
-            const halfDuration = 15000;
+            const halfDuration = 10000;
             runCircularLoop({
                 duration: halfDuration,
                 direction: 'clockwise',
@@ -976,7 +1093,7 @@
                     const isTop = el.id.includes('top');
                     el.style.transform = isTop ? 'translateY(-50px)' : 'translateY(50px)';
                 });
-            }, 30100);
+            }, 20100);
         }
         
         function animateTightSqueeze() {
@@ -1073,6 +1190,77 @@
         });
         
         // ===================================================================================
+        // UI Controls & Keyboard Navigation
+        // ===================================================================================
+        hideUiBtn.addEventListener('click', () => {
+            uiContainers.forEach(container => {
+                container.classList.toggle('ui-hidden');
+            });
+            hideIcon.classList.toggle('hidden');
+            showIcon.classList.toggle('hidden');
+        });
+
+        function toggleFullscreen() {
+            const docEl = document.documentElement;
+            const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+            const exitFS = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+            const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+
+            if (!fullscreenElement) {
+                if (requestFS) {
+                    requestFS.call(docEl).catch(err => {
+                        console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+                    });
+                }
+            } else {
+                if (exitFS) {
+                    exitFS.call(document);
+                }
+            }
+        }
+
+        function updateFullscreenIcon() {
+            const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+            if (fullscreenElement) {
+                fullscreenEnterIcon.classList.add('hidden');
+                fullscreenExitIcon.classList.remove('hidden');
+            } else {
+                fullscreenEnterIcon.classList.remove('hidden');
+                fullscreenExitIcon.classList.add('hidden');
+            }
+        }
+
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
+        document.addEventListener('fullscreenchange', updateFullscreenIcon);
+        document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
+        document.addEventListener('mozfullscreenchange', updateFullscreenIcon);
+        document.addEventListener('MSFullscreenChange', updateFullscreenIcon);
+
+        document.addEventListener('keydown', (e) => {
+            const activeSection = [...sections].find(s => !s.classList.contains('hidden'));
+            if (!activeSection) return;
+
+            switch(e.key) {
+                case 'ArrowRight':
+                    if (activeSection.id === 'guided-exercises') {
+                        nextExerciseBtn.click();
+                    }
+                    break;
+                case 'n':
+                case 'N':
+                    if (activeSection.id === 'guided-exercises') {
+                        document.getElementById('guided-to-canvas-btn').click();
+                    } else if (activeSection.id === 'canvas-exercises') {
+                        document.getElementById('canvas-next-btn').click();
+                    } else if (activeSection.id === 'completion-screen') {
+                        restartTrainingBtn.click();
+                    }
+                    break;
+            }
+        });
+
+
+        // ===================================================================================
         // Confetti Logic
         // ===================================================================================
         function launchConfetti() {
@@ -1115,6 +1303,7 @@
             }, 400);
         }
 
+    });
     </script>
 </body>
 </html>
