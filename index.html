@@ -125,12 +125,12 @@
                 <h2 class="text-3xl font-semibold mb-2 text-cyan-300">1. Guided Eye Exercises</h2>
                 <p id="exercisePrompt" class="text-xl text-cyan-200 h-12">Click "Start" to begin.</p>
             </div>
-            <div class="relative w-full h-64 flex items-center justify-center">
+            <div class="relative w-full h-96 flex items-center justify-center">
                 <div id="eyes-wrapper" class="flex items-center justify-center gap-4">
-                    <div id="eye-container-left" class="w-32 h-32 md:w-40 md:h-40 eye-container">
+                    <div id="eye-container-left" class="w-64 h-64 md:w-80 md:h-80 eye-container">
                         <svg id="eyeball-left" class="w-full h-full" viewBox="0 0 100 100"><defs><clipPath id="eyeball-clip-left"><circle cx="50" cy="50" r="45" /></clipPath></defs><g clip-path="url(#eyeball-clip-left)"><circle cx="50" cy="50" r="45" fill="white"/><circle id="pupil-left" cx="50" cy="50" r="20" fill="#0891b2"/><circle id="glare-left" cx="60" cy="40" r="5" fill="rgba(255,255,255,0.7)"/><path id="eyelid-top-left" d="M 0 0 H 100 V 50 Q 50 60 0 50 Z" fill="#1f2937" style="transform: translateY(0px);" /><path id="eyelid-bottom-left" d="M 0 100 H 100 V 50 Q 50 40 0 50 Z" fill="#1f2937" style="transform: translateY(0px);" /></g></svg>
                     </div>
-                    <div id="eye-container-right" class="w-32 h-32 md:w-40 md:h-40 eye-container">
+                    <div id="eye-container-right" class="w-64 h-64 md:w-80 md:h-80 eye-container">
                         <svg id="eyeball-right" class="w-full h-full" viewBox="0 0 100 100"><defs><clipPath id="eyeball-clip-right"><circle cx="50" cy="50" r="45" /></clipPath></defs><g clip-path="url(#eyeball-clip-right)"><circle cx="50" cy="50" r="45" fill="white"/><circle id="pupil-right" cx="50" cy="50" r="20" fill="#0891b2"/><circle id="glare-right" cx="60" cy="40" r="5" fill="rgba(255,255,255,0.7)"/><path id="eyelid-top-right" d="M 0 0 H 100 V 50 Q 50 60 0 50 Z" fill="#1f2937" style="transform: translateY(0px);" /><path id="eyelid-bottom-right" d="M 0 100 H 100 V 50 Q 50 40 0 50 Z" fill="#1f2937" style="transform: translateY(0px);" /></g></svg>
                     </div>
                 </div>
@@ -437,8 +437,9 @@
         let ball = {
             x: 100, y: 100,
             vx: 0, vy: 0,
-            radius: 18,
-            radiusX: 18, radiusY: 18,
+            radius: 36,
+            radiusX: 36,
+            radiusY: 36,
             color: '#22d3ee',
             initialSpeed: 3.5,
             maxSpeed: 5.0,
@@ -488,7 +489,7 @@
                 }
             } else if (ball.state === 'active') {
                 let totalRepulsionX = 0, totalRepulsionY = 0;
-                const avoidanceMargin = 100, turnForce = 0.2; // Increased margin and force
+                const avoidanceMargin = 120, turnForce = 0.2; // Increased margin and force
                 if (ball.x < avoidanceMargin) totalRepulsionX += (avoidanceMargin - ball.x) * turnForce * 0.2;
                 if (ball.x > exerciseCanvas.width - avoidanceMargin) totalRepulsionX -= (ball.x - (exerciseCanvas.width - avoidanceMargin)) * turnForce * 0.2;
                 if (ball.y < avoidanceMargin) totalRepulsionY += (avoidanceMargin - ball.y) * turnForce * 0.2;
@@ -593,7 +594,7 @@
         const rapidSpeedUpFactor = 0.985;
 
         let rapidBall = {
-            radius: 18, // Increased size
+            radius: 36, // Increased size
             color: '#22d3ee'
         };
 
@@ -671,8 +672,8 @@
         const dualRapidSpeedUpFactor = 0.985;
 
         let dualBalls = {
-            ball1: { radius: 18, color: '#22d3ee' }, // Cyan
-            ball2: { radius: 18, color: '#facc15' }  // Yellow-400
+            ball1: { radius: 36, color: '#22d3ee' }, // Cyan
+            ball2: { radius: 36, color: '#facc15' }  // Yellow-400
         };
 
         function drawDualRapidBalls(isFirst = false) {
