@@ -30,9 +30,9 @@
             inset: 0;
             z-index: -1;
             background-image:
-                linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-                linear-gradient(to right, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-            background-size: 50px 50px;
+                linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 100px 100px;
         }
         .eye-container {
             transition: transform 0.5s ease-in-out;
@@ -540,7 +540,7 @@
                 drawTrackingBall();
             } else if (ball.state === 'exiting') {
                 const elapsed = performance.now() - ball.exitStartTime;
-                const progress = Math.min(1, elapsed / ball.exitDuration);
+                const progress = Math.min(1, elapsed / ball.introDuration);
                 const easedProgress = easeInOutQuad(progress);
                 const endX = exerciseCanvas.width / 2, endY = exerciseCanvas.height / 2;
                 ball.x = ball.exitStartX + (endX - ball.exitStartX) * easedProgress;
