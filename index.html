@@ -214,6 +214,15 @@
                 <h2 class="text-4xl font-bold text-green-300 mb-3">Training Complete!</h2>
                 <p class="text-lg text-gray-300 mb-8">Great job! Your eyes are warmed up and ready.</p>
                 <button id="restart-training" class="glass-btn text-white font-bold py-3 px-8 rounded-lg text-xl">Restart Training</button>
+                <div class="mt-8">
+                    <button id="get-tip-btn" class="glass-btn text-white font-bold py-2 px-6 rounded-lg">Get an Eye Health Tip</button>
+                    <div id="tip-container" class="mt-4 p-4 bg-black/20 rounded-lg min-h-[80px] max-w-md mx-auto text-left hidden">
+                        <p id="tip-text" class="text-cyan-200"></p>
+                        <div id="tip-loader" class="flex justify-center items-center h-full">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-300"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -264,6 +273,10 @@
         const showIcon = document.getElementById('show-icon');
         const uiContainers = document.querySelectorAll('.ui-container');
         const timeDisplay = document.getElementById('time-display');
+        const getTipBtn = document.getElementById('get-tip-btn');
+        const tipContainer = document.getElementById('tip-container');
+        const tipText = document.getElementById('tip-text');
+        const tipLoader = document.getElementById('tip-loader');
 
         const radius = timerProgress.r.baseVal.value;
         const circumference = radius * 2 * Math.PI;
@@ -423,6 +436,8 @@
 
         restartTrainingBtn.addEventListener('click', () => {
             showSection('guided-exercises', true);
+            tipContainer.classList.add('hidden');
+            tipText.textContent = '';
         });
 
         // ===================================================================================
@@ -840,7 +855,7 @@
             currentExerciseIndex = -1;
             exercisePrompt.textContent = 'Click "Start" to begin.';
             nextExerciseBtn.textContent = 'Start';
-            if (prevExerciseBtn) prevExerciseBtn.classList.add('hidden');
+            if (typeof prevExerciseBtn !== 'undefined' && prevExerciseBtn) prevExerciseBtn.classList.add('hidden');
             stopAllGuidedAnimations(isInitial);
             showEyes();
             movePupil(50, 50);
@@ -1065,24 +1080,32 @@
             const blinkRate = 1200; 
 
             const blink = () => {
+                // Move pupils very slightly up for realism (Bell's phenomenon)
+                movePupil(50, 49, 'all 0.05s ease-in');
+
+                // Close eyelids quickly
                 [eyelidTopLeft, eyelidTopRight, eyelidBottomLeft, eyelidBottomRight].forEach(el => {
-                    el.style.transition = 'transform 0.1s ease-in';
+                    el.style.transition = 'transform 0.08s ease-in';
                 });
                 eyelidTopLeft.style.transform = 'translateY(0px)';
                 eyelidTopRight.style.transform = 'translateY(0px)';
                 eyelidBottomLeft.style.transform = 'translateY(0px)'; 
                 eyelidBottomRight.style.transform = 'translateY(0px)'; 
                 
+                // Open eyelids and reset pupils
                 setTimeout(() => {
                     [eyelidTopLeft, eyelidTopRight, eyelidBottomLeft, eyelidBottomRight].forEach(el => {
-                        el.style.transition = 'transform 0.25s ease-out';
+                        el.style.transition = 'transform 0.2s ease-out';
                         const isTop = el.id.includes('top');
                         el.style.transform = isTop ? 'translateY(-50px)' : 'translateY(50px)';
                     });
-                }, 150);
+                    // Move pupils back to center
+                    movePupil(50, 50, 'all 0.15s ease-out');
+                }, 100); // Shorter closed duration
             };
 
             blink();
+            if (window.blinkInterval) clearInterval(window.blinkInterval);
             window.blinkInterval = setInterval(blink, blinkRate);
         }
 
@@ -1196,9 +1219,58 @@
             exercise.action();
 
             nextExerciseBtn.textContent = (currentExerciseIndex === exercises.length - 1) ? 'Start Next Module' : 'Next Exercise';
-            if(prevExerciseBtn) prevExerciseBtn.classList.toggle('hidden', currentExerciseIndex <= 0);
+            if (typeof prevExerciseBtn !== 'undefined' && prevExerciseBtn) prevExerciseBtn.classList.toggle('hidden', currentExerciseIndex <= 0);
         }
         
+        // ===================================================================================
+        // Gemini API Logic
+        // ===================================================================================
+        async function getEyeHealthTip() {
+            tipContainer.classList.remove('hidden');
+            tipText.classList.add('hidden');
+            tipLoader.classList.remove('hidden');
+            getTipBtn.disabled = true;
+
+            const prompt = "Tell me a surprising and short fun fact or tip about eye health. Keep it to one or two sentences.";
+            let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+            const payload = { contents: chatHistory };
+            const apiKey = ""; // API key will be automatically provided by the environment
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API request failed with status ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                let generatedText = "Sorry, I couldn't fetch a tip right now. Please try again later.";
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    generatedText = result.candidates[0].content.parts[0].text;
+                }
+                
+                tipText.textContent = generatedText;
+
+            } catch (error) {
+                console.error("Error fetching eye health tip:", error);
+                tipText.textContent = "Sorry, an error occurred while fetching the tip.";
+            } finally {
+                tipLoader.classList.add('hidden');
+                tipText.classList.remove('hidden');
+                getTipBtn.disabled = false;
+            }
+        }
+
+        getTipBtn.addEventListener('click', getEyeHealthTip);
+
         // ===================================================================================
         // UI Controls & Keyboard Navigation
         // ===================================================================================
