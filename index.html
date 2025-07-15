@@ -16,13 +16,13 @@
         body {
             font-family: 'Inter', sans-serif;
             color: white;
-            background-color: #1e293b; /* Lighter blue fallback */
+            background-color: #00FF00; /* Green screen color */
         }
         #background-gradient {
             position: fixed;
             inset: 0;
             z-index: -2;
-            background-color: #1e293b; /* Lighter flat dark blue color */
+            background-color: #00FF00; /* Green screen color */
         }
         #grid-overlay {
             position: fixed;
@@ -35,11 +35,6 @@
         }
         .eye-container {
             transition: transform 0.5s ease-in-out;
-            /* Added glow effect to the eyes */
-            filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.7));
-        }
-        .focus-icon-glow {
-             filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.7));
         }
         .focus-icon {
             transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
@@ -100,6 +95,9 @@
     <div id="grid-overlay"></div>
     
     <!-- Corner Buttons -->
+    <div class="fixed top-4 left-4 z-50 ui-container">
+        <div id="time-display" class="text-xl font-semibold bg-black/20 p-2 rounded-lg"></div>
+    </div>
     <div class="fixed top-4 right-4 flex gap-2 z-50">
         <button id="hide-ui-btn" class="glass-btn p-3 rounded-full">
             <svg id="hide-icon" class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
@@ -124,7 +122,7 @@
         <!-- Section 1: Guided Exercises -->
         <section id="guided-exercises" class="section-screen h-full flex-col items-center justify-between p-8 hidden relative">
             <div class="w-full text-center pt-8 ui-container">
-                <div id="circular-timer-container" class="absolute bottom-8 left-8 w-24 h-24 opacity-0">
+                <div id="circular-timer-container" class="absolute top-8 left-8 w-24 h-24 opacity-0">
                     <svg class="w-full h-full" viewBox="0 0 100 100">
                         <circle stroke-width="8" fill="transparent" r="40" cx="50" cy="50" style="stroke: rgba(203, 213, 225, 0.2);" />
                         <circle id="timer-progress" class="text-cyan-400" stroke-width="8" stroke-linecap="round" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50" style="transform: rotate(-90deg); transform-origin: 50% 50%;" />
@@ -134,41 +132,41 @@
                 <h2 class="text-3xl font-semibold mb-2 text-cyan-300">1. Guided Eye Exercises</h2>
                 <p id="exercisePrompt" class="text-xl text-cyan-200 h-12">Click "Start" to begin.</p>
             </div>
-            <div class="relative w-full h-80 flex items-center justify-center">
+            <div class="relative w-full h-96 flex items-center justify-center">
                 <div id="eyes-wrapper" class="flex items-center justify-center gap-4">
-                    <div id="eye-container-left" class="w-52 h-52 md:w-64 md:h-64 eye-container">
-                        <svg id="eyeball-left" class="w-full h-full" viewBox="0 0 100 100"><defs><clipPath id="eyeball-clip-left"><circle cx="50" cy="50" r="45" /></clipPath></defs><g clip-path="url(#eyeball-clip-left)"><circle cx="50" cy="50" r="45" fill="white"/><circle id="pupil-left" cx="50" cy="50" r="20" fill="#0891b2"/><circle id="glare-left" cx="60" cy="40" r="5" fill="rgba(255,255,255,0.7)"/><path id="eyelid-top-left" d="M 0 0 H 100 V 50 Q 50 60 0 50 Z" fill="#1f2937" style="transform: translateY(0px);" /><path id="eyelid-bottom-left" d="M 0 100 H 100 V 50 Q 50 40 0 50 Z" fill="#1f2937" style="transform: translateY(0px);" /></g></svg>
+                    <div id="eye-container-left" class="w-64 h-64 md:w-80 md:h-80 eye-container">
+                        <svg id="eyeball-left" class="w-full h-full" viewBox="0 0 100 100"><defs><clipPath id="eyeball-clip-left"><circle cx="50" cy="50" r="45" /></clipPath></defs><g clip-path="url(#eyeball-clip-left)"><circle cx="50" cy="50" r="46" fill="white"/><circle id="pupil-left" cx="50" cy="50" r="20" fill="#0891b2"/><circle id="glare-left" cx="60" cy="40" r="5" fill="rgba(255,255,255,0.7)"/><path id="eyelid-top-left" d="M 0 0 H 100 V 50 Q 50 60 0 50 Z" fill="#00FF00" style="transform: translateY(0px);" /><path id="eyelid-bottom-left" d="M 0 100 H 100 V 50 Q 50 40 0 50 Z" fill="#00FF00" style="transform: translateY(0px);" /></g></svg>
                     </div>
-                    <div id="eye-container-right" class="w-52 h-52 md:w-64 md:h-64 eye-container">
-                        <svg id="eyeball-right" class="w-full h-full" viewBox="0 0 100 100"><defs><clipPath id="eyeball-clip-right"><circle cx="50" cy="50" r="45" /></clipPath></defs><g clip-path="url(#eyeball-clip-right)"><circle cx="50" cy="50" r="45" fill="white"/><circle id="pupil-right" cx="50" cy="50" r="20" fill="#0891b2"/><circle id="glare-right" cx="60" cy="40" r="5" fill="rgba(255,255,255,0.7)"/><path id="eyelid-top-right" d="M 0 0 H 100 V 50 Q 50 60 0 50 Z" fill="#1f2937" style="transform: translateY(0px);" /><path id="eyelid-bottom-right" d="M 0 100 H 100 V 50 Q 50 40 0 50 Z" fill="#1f2937" style="transform: translateY(0px);" /></g></svg>
+                    <div id="eye-container-right" class="w-64 h-64 md:w-80 md:h-80 eye-container">
+                        <svg id="eyeball-right" class="w-full h-full" viewBox="0 0 100 100"><defs><clipPath id="eyeball-clip-right"><circle cx="50" cy="50" r="45" /></clipPath></defs><g clip-path="url(#eyeball-clip-right)"><circle cx="50" cy="50" r="46" fill="white"/><circle id="pupil-right" cx="50" cy="50" r="20" fill="#0891b2"/><circle id="glare-right" cx="60" cy="40" r="5" fill="rgba(255,255,255,0.7)"/><path id="eyelid-top-right" d="M 0 0 H 100 V 50 Q 50 60 0 50 Z" fill="#00FF00" style="transform: translateY(0px);" /><path id="eyelid-bottom-right" d="M 0 100 H 100 V 50 Q 50 40 0 50 Z" fill="#00FF00" style="transform: translateY(0px);" /></g></svg>
                     </div>
                 </div>
                 <div id="focus-shift-container" class="absolute inset-0 items-center justify-center hidden">
                     <!-- This container will hold both icon sets stacked on top of each other -->
                     <div class="relative w-full h-full">
-                         <!-- Near Focus Group -->
+                            <!-- Near Focus Group -->
                         <div id="focus-near-group" class="absolute inset-0 flex items-center justify-center gap-8 transition-opacity duration-500">
-                            <svg class="w-24 h-24 focus-icon-glow" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <svg class="w-24 h-24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M 10 50 C 10 20, 70 20, 90 50 C 70 80, 10 80, 10 50 Z" fill="white" stroke="#e5e7eb" stroke-width="2"/>
                                 <circle cx="75" cy="50" r="15" fill="#0891b2" stroke="none"/>
                             </svg>
-                            <svg class="w-24 h-24 text-cyan-400 focus-icon-glow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <svg class="w-24 h-24 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
                             </svg>
-                            <svg class="w-24 h-24 text-cyan-400 focus-icon-glow" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                            <svg class="w-24 h-24 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
                                 <path d="M6.75 1a.75.75 0 0 1 .75.75V8a.5.5 0 0 0 1 0V5.467l.086-.004c.317-.012.637-.008.816.027.134.027.294.096.448.182.077.042.15.147.15.314V8a.5.5 0 1 0 1 0V6.435l.106-.01c.316-.024.584-.01.708.04.118.046.3.207.486.43.081.096.15.19.2.259V8.5a.5.5 0 0 0 1 0v-1h.342a1 1 0 0 1 .995 1.1l-.271 2.715a2.5 2.5 0 0 1-.317.991l-1.395 2.442a.5.5 0 0 1-.434.252H6.035a.5.5 0 0 1-.416-.223l-1.433-2.15a1.5 1.5 0 0 1-.243-.666l-.345-3.105a.5.5 0 0 1 .399-.546L5 8.11V9a.5.5 0 0 0 1 0V1.75A.75.75 0 0 1 6.75 1M8.5 4.466V1.75a1.75 1.75 0 1 0-3.5 0v5.34l-1.2.24a1.5 1.5 0 0 0-1.196 1.636l.345 3.106a2.5 2.5 0 0 0 .405 1.11l1.433 2.15A1.5 1.5 0 0 0 6.035 16h6.385a1.5 1.5 0 0 0 1.302-.756l1.395-2.441a3.5 3.5 0 0 0 .444-1.389l.271-2.715a2 2 0 0 0-1.99-2.199h-.581a5 5 0 0 0-.195-.248c-.191-.229-.51-.568-.88-.716-.364-.146-.846-.132-1.158-.108l-.132.012a1.26 1.26 0 0 0-.56-.642 2.6 2.6 0 0 0-.738-.288c-.31-.062-.739-.058-1.05-.046zm2.094 2.025"/>
                             </svg>
                         </div>
-                         <!-- Far Focus Group -->
+                            <!-- Far Focus Group -->
                         <div id="focus-far-group" class="absolute inset-0 flex items-center justify-center gap-8 transition-opacity duration-500">
-                            <svg class="w-24 h-24 focus-icon-glow" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <svg class="w-24 h-24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M 10 50 C 10 20, 70 20, 90 50 C 70 80, 10 80, 10 50 Z" fill="white" stroke="#e5e7eb" stroke-width="2"/>
                                 <circle cx="75" cy="50" r="15" fill="#0891b2" stroke="none"/>
                             </svg>
-                           <svg class="w-24 h-24 text-cyan-400 focus-icon-glow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                           <svg class="w-24 h-24 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
                             </svg>
-                            <svg class="w-24 h-24 text-cyan-400 focus-icon-glow" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                            <svg class="w-24 h-24 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
                                <path fill-rule="evenodd" d="M5.04.303A.5.5 0 0 1 5.5 0h5c.2 0 .38.12.46.303l3 7a.5.5 0 0 1-.363.687h-.002q-.225.044-.45.081a33 33 0 0 1-4.645.425V13.5a.5.5 0 1 1-1 0V8.495a33 33 0 0 1-4.645-.425q-.225-.036-.45-.08h-.003a.5.5 0 0 1-.362-.688l3-7ZM3.21 7.116A31 31 0 0 0 8 7.5a31 31 0 0 0 4.791-.384L10.171 1H5.83z"/>
                                <path d="M6.493 12.574a.5.5 0 0 1-.411.575c-.712.118-1.28.295-1.655.493a1.3 1.3 0 0 0-.37.265.3.3 0 0 0-.052.075l-.001.004-.004.01V14l.002.008.016.033a.6.6 0 0 0 .145.15c.165.13.435.27.813.395.751.25 1.82.414 3.024.414s2.273-.163 3.024-.414c.378-.126.648-.265.813-.395a.6.6 0 0 0 .146-.15l.015-.033L12 14v-.004a.3.3 0 0 0-.057-.09 1.3 1.3 0 0 0-.37-.264c-.376-.198-.943-.375-1.655-.493a.5.5 0 1 1 .164-.986c.77.127 1.452.328 1.957.594C12.5 13 13 13.4 13 14c0 .426-.26.752-.544.977-.29.228-.68.413-1.116.558-.878.293-2.059.465-3.34.465s-2.462-.172-3.34-.465c-.436-.145-.826-.33-1.116-.558C3.26 14.752 3 14.426 3 14c0-.599.5-1 .961-1.243.505-.266 1.187-.467 1.957-.594a.5.5 0 0 1 .575.411"/>
                             </svg>
@@ -265,6 +263,7 @@
         const hideIcon = document.getElementById('hide-icon');
         const showIcon = document.getElementById('show-icon');
         const uiContainers = document.querySelectorAll('.ui-container');
+        const timeDisplay = document.getElementById('time-display');
 
         const radius = timerProgress.r.baseVal.value;
         const circumference = radius * 2 * Math.PI;
@@ -467,14 +466,13 @@
         }
 
         function drawTrackingBall() {
-            exerciseCtx.shadowColor = ball.color;
-            exerciseCtx.shadowBlur = 20;
+            exerciseCtx.clearRect(0, 0, exerciseCanvas.width, exerciseCanvas.height);
+            
             exerciseCtx.beginPath();
             exerciseCtx.ellipse(ball.x, ball.y, ball.radiusX, ball.radiusY, 0, 0, Math.PI * 2);
             exerciseCtx.fillStyle = ball.color;
             exerciseCtx.fill();
             exerciseCtx.closePath();
-            exerciseCtx.shadowBlur = 0;
         }
 
         function updateTracking() {
@@ -620,14 +618,11 @@
                 y = Math.random() * (exerciseCanvas.height - padding * 2) + padding;
             }
 
-            exerciseCtx.shadowColor = rapidBall.color;
-            exerciseCtx.shadowBlur = 20;
             exerciseCtx.beginPath();
             exerciseCtx.arc(x, y, rapidBall.radius, 0, Math.PI * 2);
             exerciseCtx.fillStyle = rapidBall.color;
             exerciseCtx.fill();
             exerciseCtx.closePath();
-            exerciseCtx.shadowBlur = 0;
         }
         
         function runRapidSequence() {
@@ -710,8 +705,6 @@
             }
 
             // Draw ball 1 (Cyan)
-            exerciseCtx.shadowColor = dualBalls.ball1.color;
-            exerciseCtx.shadowBlur = 20;
             exerciseCtx.beginPath();
             exerciseCtx.arc(x1, y1, dualBalls.ball1.radius, 0, Math.PI * 2);
             exerciseCtx.fillStyle = dualBalls.ball1.color;
@@ -719,15 +712,11 @@
             exerciseCtx.closePath();
 
             // Draw ball 2 (Yellow)
-            exerciseCtx.shadowColor = dualBalls.ball2.color;
-            exerciseCtx.shadowBlur = 20;
             exerciseCtx.beginPath();
             exerciseCtx.arc(x2, y2, dualBalls.ball2.radius, 0, Math.PI * 2);
             exerciseCtx.fillStyle = dualBalls.ball2.color;
             exerciseCtx.fill();
             exerciseCtx.closePath();
-
-            exerciseCtx.shadowBlur = 0;
         }
         
         function runDualRapidSequence() {
@@ -851,6 +840,7 @@
             currentExerciseIndex = -1;
             exercisePrompt.textContent = 'Click "Start" to begin.';
             nextExerciseBtn.textContent = 'Start';
+            if (prevExerciseBtn) prevExerciseBtn.classList.add('hidden');
             stopAllGuidedAnimations(isInitial);
             showEyes();
             movePupil(50, 50);
@@ -1042,20 +1032,32 @@
         function startFullCircularSequence() {
             showEyes();
             const halfDuration = 10000;
-            runCircularLoop({
-                duration: halfDuration,
-                direction: 'clockwise',
-                onComplete: (endAngle) => {
-                    runCircularLoop({
-                        duration: halfDuration,
-                        direction: 'counter-clockwise',
-                        startAngle: endAngle,
-                        onComplete: () => {
-                            movePupil(50, 50);
-                        }
-                    });
-                }
-            });
+            const radius = 35; 
+            const startAngle = -Math.PI / 2;
+            const startCx = 50 + Math.cos(startAngle) * radius;
+            const startCy = 50 + Math.sin(startAngle) * radius;
+
+            // Animate pupils from center to the top of the circle
+            movePupil(startCx, startCy, 'all 0.5s ease-out'); 
+
+            // Wait for the transition to finish before starting the loop
+            setTimeout(() => {
+                runCircularLoop({
+                    duration: halfDuration,
+                    direction: 'clockwise',
+                    startAngle: startAngle,
+                    onComplete: (endAngle) => {
+                        runCircularLoop({
+                            duration: halfDuration,
+                            direction: 'counter-clockwise',
+                            startAngle: endAngle,
+                            onComplete: () => {
+                                movePupil(50, 50);
+                            }
+                        });
+                    }
+                });
+            }, 500); // 500ms matches the transition duration
         }
 
         function animateBlink() {
@@ -1169,22 +1171,21 @@
 
         nextExerciseBtn.addEventListener('click', () => {
             if (currentExerciseIndex === -1) {
-                nextExerciseBtn.textContent = 'Next Exercise';
+                runGuidedExercise(0);
+            } else if (currentExerciseIndex < exercises.length - 1) {
+                runGuidedExercise(currentExerciseIndex + 1);
+            } else {
+                document.getElementById('guided-to-canvas-btn').click();
             }
+        });
 
-            // Stop any currently running animations and timers
-            stopAllGuidedAnimations();
+        function runGuidedExercise(index) {
+            if (index < 0 || index >= exercises.length) return;
             
-            // Force the browser to recalculate styles before starting the new animation
-            void guidedTimerContainer.offsetHeight;
+            stopAllGuidedAnimations();
+            void guidedTimerContainer.offsetHeight; // Recalculate styles
 
-            currentExerciseIndex++;
-            if (currentExerciseIndex >= exercises.length) {
-                showSection('canvas-exercises');
-                setupCanvasExercise('tracking');
-                return;
-            }
-
+            currentExerciseIndex = index;
             const exercise = exercises[currentExerciseIndex];
             exercisePrompt.textContent = exercise.text;
             
@@ -1194,10 +1195,9 @@
             
             exercise.action();
 
-            if (currentExerciseIndex === exercises.length - 1) {
-                nextExerciseBtn.textContent = 'Start Next Module';
-            }
-        });
+            nextExerciseBtn.textContent = (currentExerciseIndex === exercises.length - 1) ? 'Start Next Module' : 'Next Exercise';
+            if(prevExerciseBtn) prevExerciseBtn.classList.toggle('hidden', currentExerciseIndex <= 0);
+        }
         
         // ===================================================================================
         // UI Controls & Keyboard Navigation
@@ -1268,6 +1268,16 @@
                     break;
             }
         });
+
+        function updateTime() {
+            if(timeDisplay) {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                timeDisplay.textContent = timeString;
+            }
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
 
 
         // ===================================================================================
