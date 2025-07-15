@@ -16,13 +16,22 @@
         body {
             font-family: 'Inter', sans-serif;
             color: white;
-            background-color: #0f172a; /* Fallback background */
+            background-color: #1e293b; /* Lighter blue fallback */
         }
         #background-gradient {
             position: fixed;
             inset: 0;
             z-index: -2;
-            background-color: #0f172a; /* Flat dark blue color */
+            background-color: #1e293b; /* Lighter flat dark blue color */
+        }
+        #grid-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 100px 100px;
         }
         .eye-container {
             transition: transform 0.5s ease-in-out;
@@ -88,6 +97,7 @@
 <body class="text-white antialiased">
 
     <div id="background-gradient"></div>
+    <div id="grid-overlay"></div>
     
     <!-- Corner Buttons -->
     <div class="fixed top-4 right-4 flex gap-2 z-50">
