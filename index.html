@@ -1,1401 +1,212 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eye Training Exercise</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        body, html {
-            height: 100%;
-            margin: 0;
-            overflow: hidden; /* Prevent scrolling */
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            color: white;
-            background-color: #00FF00; /* Green screen color */
-        }
-        #background-gradient {
-            position: fixed;
-            inset: 0;
-            z-index: -2;
-            background-color: #00FF00; /* Green screen color */
-        }
-        #grid-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            background-image:
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 100px 100px;
-        }
-        .eye-container {
-            transition: transform 0.5s ease-in-out;
-        }
-        .focus-icon {
-            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
-        }
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 15px 2px rgba(34, 211, 238, 0.6); }
-            50% { box-shadow: 0 0 25px 8px rgba(34, 211, 238, 0.4); }
-        }
-        .loading-bar-animated {
-            animation: pulse-glow 2.5s infinite ease-in-out;
-        }
-        .section-screen {
-            transition: opacity 0.5s ease-in-out;
-        }
-        #circular-timer-container {
-            transition: opacity 0.3s ease-in-out;
-        }
-        @keyframes pulse-out {
-            0% {
-                transform: scale(1);
-                opacity: 1;
-            }
-            100% {
-                transform: scale(1.2);
-                opacity: 0;
-            }
-        }
-        .timer-pulse-out {
-            animation: pulse-out 0.5s ease-out forwards;
-        }
-        #canvas-ui, .ui-container {
-            transition: opacity 0.5s ease-in-out;
-        }
-        .ui-hidden {
-            opacity: 0 !important;
-            pointer-events: none;
-        }
-        .glass-btn {
-            background-color: rgba(203, 213, 225, 0.1); /* slate-300 with 10% opacity */
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px); /* For Safari */
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.2s ease-in-out;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
-        }
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 
-        .glass-btn:hover {
-            background-color: rgba(203, 213, 225, 0.2); /* slate-300 with 20% opacity */
-            border-color: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
-            box-shadow: 0 7px 14px rgba(0, 0, 0, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
-        }
-    </style>
-</head>
-<body class="text-white antialiased">
+// Helper to format time
+const formatTime = (seconds) => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
 
-    <div id="background-gradient"></div>
-    <div id="grid-overlay"></div>
-    
-    <!-- Corner Buttons -->
-    <div class="fixed top-4 left-4 z-50 ui-container">
-        <div id="time-display" class="text-xl font-semibold bg-black/20 p-2 rounded-lg"></div>
-    </div>
-    <div class="fixed top-4 right-4 flex gap-2 z-50">
-        <button id="hide-ui-btn" class="glass-btn p-3 rounded-full">
-            <svg id="hide-icon" class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
-            <svg id="show-icon" class="w-6 h-6 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-        </button>
-        <button id="fullscreen-btn" class="glass-btn p-3 rounded-full">
-            <svg id="fullscreen-enter-icon" class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" /></svg>
-            <svg id="fullscreen-exit-icon" class="w-6 h-6 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" /></svg>
-        </button>
-    </div>
+// --- Component for the Animated Dots Background ---
+const DotsBackground = () => {
+  // This function generates the text-shadow string for a layer of dots.
+  const createTextShadow = (count) => {
+    let shadow = [];
+    for (let i = 0; i < count; i++) {
+      const x = (-0.5 + Math.random() * 3) + 'em';
+      const y = (-0.5 + Math.random() * 3) + 'em';
+      // Reverted lightness from 65% back to 50%
+      const color = `hsla(${Math.random() * 360}, 100%, 50%, 0.9)`;
+      shadow.push(`${x} ${y} 2px ${color}`);
+    }
+    return shadow.join(', ');
+  };
 
-    <!-- Loading Screen -->
-    <div id="loading-screen" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex flex-col items-center justify-center z-50 transition-opacity duration-500 ease-in-out">
-        <h1 class="text-3xl md:text-4xl font-bold text-cyan-300 tracking-widest uppercase mb-6" style="text-shadow: 0 0 10px rgba(34, 211, 238, 0.5);">Eye Warm-up</h1>
-        <div class="w-1/2 max-w-sm bg-gray-800/50 rounded-full h-4 border-2 border-cyan-500/30 p-1">
-            <div id="loading-bar" class="bg-gradient-to-r from-cyan-400 to-teal-300 h-full rounded-full loading-bar-animated" style="width: 0%; transition: width 1.8s cubic-bezier(0.25, 1, 0.5, 1);"></div>
+  // useMemo generates the text-shadow string only once.
+  const dotLayers = useMemo(() => [
+    // Reverted dot count from 50 back to 40
+    { id: 1, textShadow: createTextShadow(40), duration: '44s', delay: '-27s' },
+    { id: 2, textShadow: createTextShadow(40), duration: '43s', delay: '-32s' },
+    { id: 3, textShadow: createTextShadow(40), duration: '42s', delay: '-23s' },
+    { id: 4, textShadow: createTextShadow(40), duration: '41s', delay: '-19s' },
+  ], []);
+
+  return (
+    <div className="absolute inset-0 w-full h-full overflow-hidden" style={{ mixBlendMode: 'screen' }}>
+      {dotLayers.map(layer => (
+        <div
+          key={layer.id}
+          className="absolute top-1/2 left-1/2 w-[3em] h-[3em]"
+          style={{
+            fontSize: '52px',
+            animation: `move ${layer.duration} ${layer.delay} infinite ease-in-out alternate`,
+          }}
+        >
+          <div
+            className="w-full h-full"
+            style={{
+              color: 'transparent',
+              textShadow: layer.textShadow,
+            }}
+          >
+            V
+          </div>
         </div>
+      ))}
     </div>
+  );
+};
 
-    <div id="main-content" class="h-full opacity-0 transition-opacity duration-500 ease-in-out">
+
+// --- Main App Component ---
+export default function App() {
+  const [duration, setDuration] = useState(10 * 60);
+  const [timeLeft, setTimeLeft] = useState(duration);
+  const [isActive, setIsActive] = useState(false);
+  const [lightAssist, setLightAssist] = useState(false);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    if (isActive && timeLeft > 0) {
+      timerRef.current = setInterval(() => {
+        setTimeLeft((prevTime) => prevTime - 1);
+      }, 1000);
+    } else if (timeLeft === 0) {
+      clearInterval(timerRef.current);
+      setIsActive(false);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [isActive, timeLeft]);
+
+  const handleStart = () => {
+    if (timeLeft > 0) {
+      setIsActive(true);
+    }
+  };
+
+  const handlePause = () => {
+    setIsActive(false);
+  };
+
+  const handleReset = () => {
+    setIsActive(false);
+    setTimeLeft(duration);
+  };
+
+  const selectDuration = (minutes) => {
+    const newDuration = minutes * 60;
+    setDuration(newDuration);
+    setTimeLeft(newDuration);
+    setIsActive(false);
+  };
+  
+  const visualizerClasses = `
+    absolute inset-0 transition-opacity duration-1000 ease-in-out bg-black
+    ${lightAssist && isActive ? 'opacity-100' : 'opacity-0'}
+  `;
+
+  return (
+    <div className="bg-black text-white min-h-screen flex flex-col items-center justify-center p-4 md:p-8 font-sans relative overflow-hidden">
+      
+      {/* Light Assist Visualizer Background */}
+      <div className={visualizerClasses} style={{ zIndex: 1 }}>
+        <DotsBackground />
+      </div>
+      
+      {/* Main Content Wrapper */}
+      <div className={`relative z-10 w-full flex flex-col items-center transition-all duration-500 ease-in-out ${isActive ? 'justify-center h-full' : 'justify-start'}`}>
         
-        <!-- Section 1: Guided Exercises -->
-        <section id="guided-exercises" class="section-screen h-full flex-col items-center justify-between p-8 hidden relative">
-            <div class="w-full text-center pt-8 ui-container">
-                <div id="circular-timer-container" class="absolute top-8 left-8 w-24 h-24 opacity-0">
-                    <svg class="w-full h-full" viewBox="0 0 100 100">
-                        <circle stroke-width="8" fill="transparent" r="40" cx="50" cy="50" style="stroke: rgba(203, 213, 225, 0.2);" />
-                        <circle id="timer-progress" class="text-cyan-400" stroke-width="8" stroke-linecap="round" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50" style="transform: rotate(-90deg); transform-origin: 50% 50%;" />
-                        <text id="timer-text" x="50" y="50" text-anchor="middle" dy=".3em" class="text-2xl font-bold fill-current text-white">00</text>
-                    </svg>
-                </div>
-                <h2 class="text-3xl font-semibold mb-2 text-cyan-300">1. Guided Eye Exercises</h2>
-                <p id="exercisePrompt" class="text-xl text-cyan-200 h-12">Click "Start" to begin.</p>
-            </div>
-            <div class="relative w-full h-96 flex items-center justify-center">
-                <div id="eyes-wrapper" class="flex items-center justify-center gap-4">
-                    <div id="eye-container-left" class="w-64 h-64 md:w-80 md:h-80 eye-container">
-                        <svg id="eyeball-left" class="w-full h-full" viewBox="0 0 100 100"><defs><clipPath id="eyeball-clip-left"><circle cx="50" cy="50" r="45" /></clipPath></defs><g clip-path="url(#eyeball-clip-left)"><circle cx="50" cy="50" r="46" fill="white"/><circle id="pupil-left" cx="50" cy="50" r="20" fill="#000000"/><circle id="glare-left" cx="60" cy="40" r="5" fill="rgba(255,255,255,0.7)"/><path id="eyelid-top-left" d="M 0 0 H 100 V 50 Q 50 60 0 50 Z" fill="#00FF00" style="transform: translateY(0px);" /><path id="eyelid-bottom-left" d="M 0 100 H 100 V 50 Q 50 40 0 50 Z" fill="#00FF00" style="transform: translateY(0px);" /></g></svg>
-                    </div>
-                    <div id="eye-container-right" class="w-64 h-64 md:w-80 md:h-80 eye-container">
-                        <svg id="eyeball-right" class="w-full h-full" viewBox="0 0 100 100"><defs><clipPath id="eyeball-clip-right"><circle cx="50" cy="50" r="45" /></clipPath></defs><g clip-path="url(#eyeball-clip-right)"><circle cx="50" cy="50" r="46" fill="white"/><circle id="pupil-right" cx="50" cy="50" r="20" fill="#000000"/><circle id="glare-right" cx="60" cy="40" r="5" fill="rgba(255,255,255,0.7)"/><path id="eyelid-top-right" d="M 0 0 H 100 V 50 Q 50 60 0 50 Z" fill="#00FF00" style="transform: translateY(0px);" /><path id="eyelid-bottom-right" d="M 0 100 H 100 V 50 Q 50 40 0 50 Z" fill="#00FF00" style="transform: translateY(0px);" /></g></svg>
-                    </div>
-                </div>
-                <div id="focus-shift-container" class="absolute inset-0 items-center justify-center hidden">
-                    <!-- This container will hold both icon sets stacked on top of each other -->
-                    <div class="relative w-full h-full">
-                            <!-- Near Focus Group -->
-                        <div id="focus-near-group" class="absolute inset-0 flex items-center justify-center gap-8 transition-opacity duration-500">
-                            <svg class="w-24 h-24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M 10 50 C 10 20, 70 20, 90 50 C 70 80, 10 80, 10 50 Z" fill="white" stroke="#e5e7eb" stroke-width="2"/>
-                                <circle cx="75" cy="50" r="15" fill="#000000" stroke="none"/>
-                            </svg>
-                            <svg class="w-24 h-24 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
-                            </svg>
-                            <svg class="w-24 h-24 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M6.75 1a.75.75 0 0 1 .75.75V8a.5.5 0 0 0 1 0V5.467l.086-.004c.317-.012.637-.008.816.027.134.027.294.096.448.182.077.042.15.147.15.314V8a.5.5 0 1 0 1 0V6.435l.106-.01c.316-.024.584-.01.708.04.118.046.3.207.486.43.081.096.15.19.2.259V8.5a.5.5 0 0 0 1 0v-1h.342a1 1 0 0 1 .995 1.1l-.271 2.715a2.5 2.5 0 0 1-.317.991l-1.395 2.442a.5.5 0 0 1-.434.252H6.035a.5.5 0 0 1-.416-.223l-1.433-2.15a1.5 1.5 0 0 1-.243-.666l-.345-3.105a.5.5 0 0 1 .399-.546L5 8.11V9a.5.5 0 0 0 1 0V1.75A.75.75 0 0 1 6.75 1M8.5 4.466V1.75a1.75 1.75 0 1 0-3.5 0v5.34l-1.2.24a1.5 1.5 0 0 0-1.196 1.636l.345 3.106a2.5 2.5 0 0 0 .405 1.11l1.433 2.15A1.5 1.5 0 0 0 6.035 16h6.385a1.5 1.5 0 0 0 1.302-.756l1.395-2.441a3.5 3.5 0 0 0 .444-1.389l.271-2.715a2 2 0 0 0-1.99-2.199h-.581a5 5 0 0 0-.195-.248c-.191-.229-.51-.568-.88-.716-.364-.146-.846-.132-1.158-.108l-.132.012a1.26 1.26 0 0 0-.56-.642 2.6 2.6 0 0 0-.738-.288c-.31-.062-.739-.058-1.05-.046zm2.094 2.025"/>
-                            </svg>
-                        </div>
-                            <!-- Far Focus Group -->
-                        <div id="focus-far-group" class="absolute inset-0 flex items-center justify-center gap-8 transition-opacity duration-500">
-                            <svg class="w-24 h-24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M 10 50 C 10 20, 70 20, 90 50 C 70 80, 10 80, 10 50 Z" fill="white" stroke="#e5e7eb" stroke-width="2"/>
-                                <circle cx="75" cy="50" r="15" fill="#000000" stroke="none"/>
-                            </svg>
-                           <svg class="w-24 h-24 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
-                            </svg>
-                            <svg class="w-24 h-24 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
-                               <path fill-rule="evenodd" d="M5.04.303A.5.5 0 0 1 5.5 0h5c.2 0 .38.12.46.303l3 7a.5.5 0 0 1-.363.687h-.002q-.225.044-.45.081a33 33 0 0 1-4.645.425V13.5a.5.5 0 1 1-1 0V8.495a33 33 0 0 1-4.645-.425q-.225-.036-.45-.08h-.003a.5.5 0 0 1-.362-.688l3-7ZM3.21 7.116A31 31 0 0 0 8 7.5a31 31 0 0 0 4.791-.384L10.171 1H5.83z"/>
-                               <path d="M6.493 12.574a.5.5 0 0 1-.411.575c-.712.118-1.28.295-1.655.493a1.3 1.3 0 0 0-.37.265.3.3 0 0 0-.052.075l-.001.004-.004.01V14l.002.008.016.033a.6.6 0 0 0 .145.15c.165.13.435.27.813.395.751.25 1.82.414 3.024.414s2.273-.163 3.024-.414c.378-.126.648-.265.813-.395a.6.6 0 0 0 .146-.15l.015-.033L12 14v-.004a.3.3 0 0 0-.057-.09 1.3 1.3 0 0 0-.37-.264c-.376-.198-.943-.375-1.655-.493a.5.5 0 1 1 .164-.986c.77.127 1.452.328 1.957.594C12.5 13 13 13.4 13 14c0 .426-.26.752-.544.977-.29.228-.68.413-1.116.558-.878.293-2.059.465-3.34.465s-2.462-.172-3.34-.465c-.436-.145-.826-.33-1.116-.558C3.26 14.752 3 14.426 3 14c0-.599.5-1 .961-1.243.505-.266 1.187-.467 1.957-.594a.5.5 0 0 1 .575.411"/>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="pb-16 text-center ui-container">
-                <button id="nextExercise" class="glass-btn text-white font-bold py-3 px-6 rounded-lg">Start</button>
-            </div>
-            <div class="absolute bottom-8 right-8 ui-container">
-                <button id="guided-to-canvas-btn" class="nav-btn glass-btn p-3 rounded-full" data-target="canvas-exercises">Next &rarr;</button>
-            </div>
-        </section>
+        {/* Setup View (Title & Instructions) */}
+        <div className={`transition-opacity duration-500 w-full max-w-2xl ${isActive ? 'opacity-0 h-0' : 'opacity-100'}`}>
+          {!isActive && (
+            <>
+              <header className="text-center mb-6">
+                <h1 className="text-4xl md:text-5xl font-bold text-cyan-300">Image Streaming Guide</h1>
+                <p className="text-gray-400 mt-2">A practice to enhance your mind's eye.</p>
+              </header>
+              <section className="mb-6 bg-black/30 backdrop-blur-sm p-4 rounded-lg">
+                <h2 className="text-2xl font-semibold text-cyan-400 mb-3">Instructions</h2>
+                <ol className="list-decimal list-inside space-y-2 text-gray-300">
+                  <li>Close your eyes and describe aloud the images you see, no matter how faint.</li>
+                  <li>Speak continuously in the present tense (e.g., "I see a blue circle turning...").</li>
+                  <li>Engage all your senses in your description. What do you hear, feel, smell?</li>
+                  <li>Keep the stream of description flowing for the duration of the timer.</li>
+                </ol>
+              </section>
+            </>
+          )}
+        </div>
 
-        <!-- Section 2, 3, 4: Canvas Exercises (Merged) -->
-        <section id="canvas-exercises" class="section-screen h-full flex-col items-center justify-center p-8 hidden relative">
-            <canvas id="exerciseCanvas" class="absolute top-0 left-0 w-full h-full z-0"></canvas>
-            <div id="canvas-ui" class="relative z-10 h-full w-full flex flex-col items-center justify-between ui-container">
-                <div class="text-center pt-8">
-                    <h2 id="canvas-title" class="text-3xl font-semibold mb-2 text-cyan-300"></h2>
-                    <p id="canvas-description" class="text-gray-300"></p>
-                </div>
-                <div class="pb-16 text-center">
-                    <button id="startTracking" class="glass-btn text-white font-bold py-3 px-6 rounded-lg hidden">Start</button>
-                    <button id="stopTracking" class="glass-btn text-white font-bold py-3 px-6 rounded-lg hidden">Stop</button>
-                    <button id="startRapid" class="glass-btn text-white font-bold py-3 px-6 rounded-lg hidden">Start</button>
-                    <button id="stopRapid" class="glass-btn text-white font-bold py-3 px-6 rounded-lg hidden">Stop</button>
-                    <button id="startDualRapid" class="glass-btn text-white font-bold py-3 px-6 rounded-lg hidden">Start</button>
-                    <button id="stopDualRapid" class="glass-btn text-white font-bold py-3 px-6 rounded-lg hidden">Stop</button>
-                </div>
-            </div>
-             <div class="absolute bottom-8 right-8 z-20 ui-container">
-                <button id="canvas-next-btn" class="nav-btn glass-btn p-3 rounded-full">Next &rarr;</button>
-            </div>
-        </section>
+        {/* Timer Display & Controls Container */}
+        <div className={`w-full max-w-2xl flex flex-col items-center transition-all duration-500 ease-in-out ${isActive ? 'flex-grow justify-center' : ''}`}>
+          <div className="text-center my-8">
+            <p className="text-7xl md:text-8xl font-mono tracking-tighter text-white">{formatTime(timeLeft)}</p>
+          </div>
 
-        <!-- Section 5: Completion Screen -->
-        <section id="completion-screen" class="section-screen h-full flex-col items-center justify-center p-8 hidden text-center relative">
-            <canvas id="confetti-canvas" class="absolute top-0 left-0 w-full h-full z-0"></canvas>
-            <div class="relative z-10 flex flex-col items-center justify-center ui-container">
-                <svg class="w-24 h-24 text-green-400 mb-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <h2 class="text-4xl font-bold text-green-300 mb-3">Training Complete!</h2>
-                <p class="text-lg text-gray-300 mb-8">Great job! Your eyes are warmed up and ready.</p>
-                <button id="restart-training" class="glass-btn text-white font-bold py-3 px-8 rounded-lg text-xl">Restart Training</button>
-                <div class="mt-8">
-                    <button id="get-tip-btn" class="glass-btn text-white font-bold py-2 px-6 rounded-lg">Get an Eye Health Tip</button>
-                    <div id="tip-container" class="mt-4 p-4 bg-black/20 rounded-lg min-h-[80px] max-w-md mx-auto text-left hidden">
-                        <p id="tip-text" class="text-cyan-200"></p>
-                        <div id="tip-loader" class="flex justify-center items-center h-full">
-                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-300"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+          <div className="flex justify-center items-center gap-4 mb-6">
+            {!isActive ? (
+              <button onClick={handleStart} className="bg-cyan-500 hover:bg-cyan-400 text-gray-900 font-bold py-3 px-8 rounded-full transition-transform transform hover:scale-105">
+                Start
+              </button>
+            ) : (
+              <button onClick={handlePause} className="bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold py-3 px-8 rounded-full transition-transform transform hover:scale-105">
+                Pause
+              </button>
+            )}
+            <button onClick={handleReset} className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-8 rounded-full transition-transform transform hover:scale-105">
+              Reset
+            </button>
+          </div>
 
+          {/* Hide duration selection when timer is active */}
+          {!isActive && (
+            <div className="flex justify-center gap-2 md:gap-4 mb-8">
+              {[5, 10, 20].map((min) => (
+                <button
+                  key={min}
+                  onClick={() => selectDuration(min)}
+                  className={`py-2 px-4 rounded-full text-sm font-semibold transition ${
+                    duration === min * 60
+                      ? 'bg-cyan-400 text-gray-900 shadow-lg'
+                      : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                  }`}
+                >
+                  {min} min
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center justify-center gap-4 border-t border-gray-700/50 pt-6 w-full max-w-xs">
+            <span className="text-lg font-medium text-gray-300">Light Assist</span>
+            <label htmlFor="light-assist-toggle" className="relative inline-flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                id="light-assist-toggle" 
+                className="sr-only peer"
+                checked={lightAssist}
+                onChange={() => setLightAssist(!lightAssist)}
+              />
+              <div className="w-14 h-8 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-cyan-500"></div>
+            </label>
+          </div>
+          <p className="text-center text-xs text-gray-500 mt-2">A gentle moving light for when your mind's eye is dark.</p>
+        </div>
+      </div>
+      
+      <style>
+        {`
+          @keyframes move {
+            from {
+              transform: rotate(0deg) scale(12) translateX(-20px);
+            }
+            to {
+              /* Reverted scale from 22 back to 18 */
+              transform: rotate(360deg) scale(18) translateX(20px);
+            }
+          }
+        `}
+      </style>
     </div>
-
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // ===================================================================================
-        // Global State & Element Variables
-        // ===================================================================================
-        const sections = document.querySelectorAll('.section-screen');
-        const navButtons = document.querySelectorAll('.nav-btn');
-        const restartTrainingBtn = document.getElementById('restart-training');
-        
-        const nextExerciseBtn = document.getElementById('nextExercise');
-        const exercisePrompt = document.getElementById('exercisePrompt');
-        const guidedTimerContainer = document.getElementById('circular-timer-container');
-        const timerProgress = document.getElementById('timer-progress');
-        const timerText = document.getElementById('timer-text');
-        const eyesWrapper = document.getElementById('eyes-wrapper');
-        const focusShiftContainer = document.getElementById('focus-shift-container');
-        const focusNearGroup = document.getElementById('focus-near-group');
-        const focusFarGroup = document.getElementById('focus-far-group');
-        const eyeContainerLeft = document.getElementById('eye-container-left');
-        const pupilLeft = document.getElementById('pupil-left');
-        const glareLeft = document.getElementById('glare-left');
-        const eyelidTopLeft = document.getElementById('eyelid-top-left');
-        const eyelidBottomLeft = document.getElementById('eyelid-bottom-left');
-        const eyeContainerRight = document.getElementById('eye-container-right');
-        const pupilRight = document.getElementById('pupil-right');
-        const glareRight = document.getElementById('glare-right');
-        const eyelidTopRight = document.getElementById('eyelid-top-right');
-        const eyelidBottomRight = document.getElementById('eyelid-bottom-right');
-
-        const exerciseCanvas = document.getElementById('exerciseCanvas');
-        const exerciseCtx = exerciseCanvas.getContext('2d');
-        const startTrackingBtn = document.getElementById('startTracking');
-        const stopTrackingBtn = document.getElementById('stopTracking');
-        const startRapidBtn = document.getElementById('startRapid');
-        const stopRapidBtn = document.getElementById('stopRapid');
-        const startDualRapidBtn = document.getElementById('startDualRapid');
-        const stopDualRapidBtn = document.getElementById('stopDualRapid');
-        const fullscreenBtn = document.getElementById('fullscreen-btn');
-        const fullscreenEnterIcon = document.getElementById('fullscreen-enter-icon');
-        const fullscreenExitIcon = document.getElementById('fullscreen-exit-icon');
-        const hideUiBtn = document.getElementById('hide-ui-btn');
-        const hideIcon = document.getElementById('hide-icon');
-        const showIcon = document.getElementById('show-icon');
-        const uiContainers = document.querySelectorAll('.ui-container');
-        const timeDisplay = document.getElementById('time-display');
-        const getTipBtn = document.getElementById('get-tip-btn');
-        const tipContainer = document.getElementById('tip-container');
-        const tipText = document.getElementById('tip-text');
-        const tipLoader = document.getElementById('tip-loader');
-
-        const radius = timerProgress.r.baseVal.value;
-        const circumference = radius * 2 * Math.PI;
-        timerProgress.style.strokeDasharray = circumference;
-
-        let trackingAnimationId;
-        let trackingTimerId;
-        let rapidTimeoutId;
-        let rapidExerciseTimerId;
-        let dualRapidTimeoutId;
-        let dualRapidExerciseTimerId;
-        window.guidedTimerInterval = null;
-        window.guidedExerciseTimeout = null;
-        window.blinkInterval = null;
-        window.pupilLoopTimeout = null;
-        window.circularMotionId = null;
-        window.tightSqueezeTimeout = null;
-        window.focusShiftTimeout = null;
-        window.vestibularInterval = null;
-        window.directionalSwitchTimeout = null;
-        let currentExerciseIndex = -1;
-        // ===================================================================================
-        // Loading Screen & Navigation Logic
-        // ===================================================================================
-
-        function showSection(targetId, isInitialLoad = false) {
-            sections.forEach(section => {
-                if (section.id === targetId) {
-                    section.classList.remove('hidden');
-                    section.classList.add('flex');
-                    setTimeout(() => section.style.opacity = '1', 50);
-                } else {
-                    section.style.opacity = '0';
-                    setTimeout(() => {
-                        section.classList.add('hidden');
-                        section.classList.remove('flex');
-                    }, 500);
-                }
-            });
-            
-            // Reset or initialize section-specific logic
-            if (targetId === 'guided-exercises') {
-                resetGuidedExercises(isInitialLoad);
-            }
-            
-            if (targetId === 'completion-screen') {
-                setTimeout(launchConfetti, 100);
-            }
-        }
-
-        function cleanupCanvasExercises() {
-            // Stop tracking animation and timer
-            clearTimeout(trackingTimerId);
-            cancelAnimationFrame(trackingAnimationId);
-            trackingAnimationId = null;
-            ball.state = 'idle';
-
-            // Stop rapid movement animation and timer
-            clearTimeout(rapidTimeoutId);
-            clearTimeout(rapidExerciseTimerId);
-            rapidTimeoutId = null;
-            rapidExerciseTimerId = null;
-
-            // Stop dual rapid movement animation and timer
-            clearTimeout(dualRapidTimeoutId);
-            clearTimeout(dualRapidExerciseTimerId);
-            dualRapidTimeoutId = null;
-            dualRapidExerciseTimerId = null;
-            
-            // Clear the canvas
-            if(exerciseCtx) exerciseCtx.clearRect(0, 0, exerciseCanvas.width, exerciseCanvas.height);
-        }
-
-        function setupCanvasExercise(type) {
-            const titleEl = document.getElementById('canvas-title');
-            const descEl = document.getElementById('canvas-description');
-            const nextBtn = document.getElementById('canvas-next-btn');
-            const canvasUI = document.getElementById('canvas-ui');
-
-            cleanupCanvasExercises(); 
-            canvasUI.style.opacity = '1';
-            
-            // Hide all buttons first
-            startTrackingBtn.classList.add('hidden');
-            stopTrackingBtn.classList.add('hidden');
-            startRapidBtn.classList.add('hidden');
-            stopRapidBtn.classList.add('hidden');
-            startDualRapidBtn.classList.add('hidden');
-            stopDualRapidBtn.classList.add('hidden');
-
-            if (type === 'tracking') {
-                titleEl.textContent = '2. Tracking';
-                descEl.textContent = 'Keep your head still and follow the ball with your eyes. (45 seconds)';
-                startTrackingBtn.classList.remove('hidden');
-                nextBtn.textContent = 'Next →';
-                nextBtn.setAttribute('data-target', 'rapid');
-            } else if (type === 'rapid') {
-                titleEl.textContent = '3. Rapid Eye Movement';
-                descEl.textContent = 'The ball will appear in random locations. Move your eyes as quickly as possible to find it. (45 seconds)';
-                startRapidBtn.classList.remove('hidden');
-                nextBtn.textContent = 'Next →';
-                nextBtn.setAttribute('data-target', 'dualRapid');
-                drawRapidBall(true);
-            } else if (type === 'dualRapid') {
-                titleEl.textContent = '4. Dual Ball Movement';
-                descEl.textContent = 'Two balls will appear randomly. Keep your eyes moving between them. (45 seconds)';
-                startDualRapidBtn.classList.remove('hidden');
-                nextBtn.textContent = 'Finish →';
-                nextBtn.setAttribute('data-target', 'completion-screen');
-                drawDualRapidBalls(true);
-            }
-        }
-        
-        function initialEyeOpeningAnimation() {
-            const allEyelids = [eyelidTopLeft, eyelidTopRight, eyelidBottomLeft, eyelidBottomRight];
-            allEyelids.forEach(el => {
-                el.style.transition = 'transform 0.7s ease-out';
-                const isTop = el.id.includes('top');
-                el.style.transform = isTop ? 'translateY(-50px)' : 'translateY(50px)';
-            });
-        }
-
-        
-        const loadingScreen = document.getElementById('loading-screen');
-        const loadingBar = document.getElementById('loading-bar');
-        const mainContent = document.getElementById('main-content');
-        
-        setTimeout(() => { loadingBar.style.width = '100%'; }, 100);
-
-        setTimeout(() => {
-            loadingScreen.style.opacity = '0';
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-                mainContent.style.opacity = '1';
-                showSection('guided-exercises', true);
-            }, 500);
-        }, 2000);
-
-        document.getElementById('guided-to-canvas-btn').addEventListener('click', () => {
-            stopAllGuidedAnimations();
-            showSection('canvas-exercises');
-            setupCanvasExercise('tracking');
-        });
-
-        const canvasNextBtn = document.getElementById('canvas-next-btn');
-
-        canvasNextBtn.addEventListener('click', () => {
-            const target = canvasNextBtn.getAttribute('data-target');
-            cleanupCanvasExercises();
-            if (target === 'completion-screen') {
-                showSection(target);
-            } else {
-                showSection('canvas-exercises');
-                setupCanvasExercise(target);
-            }
-        });
-
-        restartTrainingBtn.addEventListener('click', () => {
-            showSection('guided-exercises', true);
-            tipContainer.classList.add('hidden');
-            tipText.textContent = '';
-        });
-
-        // ===================================================================================
-        // Common Variables & Setup
-        // ===================================================================================
-
-        function resizeAllCanvases() {
-            exerciseCanvas.width = window.innerWidth;
-            exerciseCanvas.height = window.innerHeight;
-        }
-
-        window.addEventListener('resize', resizeAllCanvases);
-        window.addEventListener('load', resizeAllCanvases);
-
-
-        // ===================================================================================
-        // Tracking Logic
-        // ===================================================================================
-
-        let ball = {
-            x: 100, y: 100,
-            vx: 0, vy: 0,
-            radius: 29,
-            radiusX: 29,
-            radiusY: 29,
-            color: '#22d3ee',
-            initialSpeed: 3.5,
-            maxSpeed: 5.0,
-            angleWobble: 0.01, // Further reduced wobbliness
-            startTime: null,
-            state: 'idle', // 'idle', 'entering', 'active', 'exiting'
-            introProgress: 0,
-            introDuration: 1500,
-            exitStartTime: null,
-            exitDuration: 1500,
-            exitStartX: 0, exitStartY: 0
-        };
-
-        function easeInOutQuad(t) {
-            return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-        }
-
-        function drawTrackingBall() {
-            exerciseCtx.clearRect(0, 0, exerciseCanvas.width, exerciseCanvas.height);
-            
-            exerciseCtx.beginPath();
-            exerciseCtx.ellipse(ball.x, ball.y, ball.radiusX, ball.radiusY, 0, 0, Math.PI * 2);
-            exerciseCtx.fillStyle = ball.color;
-            exerciseCtx.fill();
-            exerciseCtx.closePath();
-        }
-
-        function updateTracking() {
-            exerciseCtx.clearRect(0, 0, exerciseCanvas.width, exerciseCanvas.height);
-            
-            if (ball.state === 'entering') {
-                const elapsed = performance.now() - ball.startTime;
-                const progress = Math.min(1, elapsed / ball.introDuration);
-                const easedProgress = easeInOutQuad(progress);
-                const startY = exerciseCanvas.height + ball.radius;
-                const endY = exerciseCanvas.height / 2;
-                ball.x = exerciseCanvas.width / 2;
-                ball.y = startY + (endY - startY) * easedProgress;
-                drawTrackingBall();
-                if (progress >= 1) {
-                    ball.state = 'active';
-                    ball.startTime = performance.now();
-                    const startAngle = -Math.PI / 2;
-                    ball.vx = Math.cos(startAngle) * ball.initialSpeed;
-                    ball.vy = Math.sin(startAngle) * ball.initialSpeed;
-                }
-            } else if (ball.state === 'active') {
-                let totalRepulsionX = 0, totalRepulsionY = 0;
-                const avoidanceMargin = 120, turnForce = 0.2; // Increased margin and force
-                if (ball.x < avoidanceMargin) totalRepulsionX += (avoidanceMargin - ball.x) * turnForce * 0.2;
-                if (ball.x > exerciseCanvas.width - avoidanceMargin) totalRepulsionX -= (ball.x - (exerciseCanvas.width - avoidanceMargin)) * turnForce * 0.2;
-                if (ball.y < avoidanceMargin) totalRepulsionY += (avoidanceMargin - ball.y) * turnForce * 0.2;
-                if (ball.y > exerciseCanvas.height - avoidanceMargin) totalRepulsionY -= (ball.y - (exerciseCanvas.height - avoidanceMargin)) * turnForce * 0.2;
-                ball.vx += totalRepulsionX;
-                ball.vy += totalRepulsionY;
-
-                const centerX = exerciseCanvas.width / 2, centerY = exerciseCanvas.height / 2;
-                ball.vx += (centerX - ball.x) * 0.0004; // Increased centering force
-                ball.vy += (centerY - ball.y) * 0.0004; // Increased centering force
-                
-                const maxDistance = exerciseCanvas.width / 2;
-                const distanceFromCenter = Math.sqrt((centerX - ball.x)**2 + (centerY - ball.y)**2);
-                const normalizedDistance = Math.min(1, distanceFromCenter / maxDistance);
-                const turnChance = 0.04 + 0.15 * (1 - normalizedDistance); // Increased turn chance
-                let angle = Math.atan2(ball.vy, ball.vx), speed = Math.sqrt(ball.vx**2 + ball.vy**2);
-                angle += (Math.random() - 0.5) * ball.angleWobble;
-                if (Math.random() < turnChance) angle += (Math.random() - 0.5) * (Math.PI / 1.5); // Increased turn angle
-                ball.vx = Math.cos(angle) * speed;
-                ball.vy = Math.sin(angle) * speed;
-
-                if (ball.startTime) {
-                    const elapsedTime = performance.now() - ball.startTime;
-                    if (elapsedTime > 5000) ball.maxSpeed = 8.0; // Reduced max speed
-                }
-                const currentSpeed = Math.sqrt(ball.vx**2 + ball.vy**2);
-                if (currentSpeed > ball.maxSpeed) { ball.vx *= ball.maxSpeed / currentSpeed; ball.vy *= ball.maxSpeed / currentSpeed; }
-                if (currentSpeed < ball.maxSpeed) { ball.vx *= 1.01; ball.vy *= 1.01; }
-                ball.x += ball.vx;
-                ball.y += ball.vy;
-
-                const repulsionMagnitude = Math.sqrt(totalRepulsionX**2 + totalRepulsionY**2);
-                const squashFactor = Math.min(1, repulsionMagnitude * 0.5);
-                ball.radiusX = ball.radius * (1 - squashFactor * 0.3);
-                ball.radiusY = ball.radius * (1 + squashFactor * 0.3);
-                ball.radiusX += (ball.radius - ball.radiusX) * 0.1;
-                ball.radiusY += (ball.radius - ball.radiusY) * 0.1;
-                drawTrackingBall();
-            } else if (ball.state === 'exiting') {
-                const elapsed = performance.now() - ball.exitStartTime;
-                const progress = Math.min(1, elapsed / ball.introDuration);
-                const easedProgress = easeInOutQuad(progress);
-                const endX = exerciseCanvas.width / 2, endY = exerciseCanvas.height / 2;
-                ball.x = ball.exitStartX + (endX - ball.exitStartX) * easedProgress;
-                ball.y = ball.exitStartY + (endY - ball.exitStartY) * easedProgress;
-                drawTrackingBall();
-                if (progress >= 1) {
-                    cancelAnimationFrame(trackingAnimationId);
-                    trackingAnimationId = null;
-                    ball.state = 'idle';
-                    stopTrackingBtn.classList.add('hidden');
-                    startTrackingBtn.classList.remove('hidden');
-                    document.getElementById('canvas-ui').style.opacity = '1';
-                }
-            }
-            if (ball.state !== 'idle') {
-                trackingAnimationId = requestAnimationFrame(updateTracking);
-            }
-        }
-
-        function endTrackingSequence(force = false) {
-            if (force) {
-                clearTimeout(trackingTimerId);
-                cancelAnimationFrame(trackingAnimationId);
-                trackingAnimationId = null;
-                ball.state = 'idle';
-                return;
-            }
-            if (ball.state === 'idle' || ball.state === 'exiting') return;
-            clearTimeout(trackingTimerId);
-            ball.state = 'exiting';
-            ball.exitStartTime = performance.now();
-            ball.exitStartX = ball.x;
-            ball.exitStartY = ball.y;
-        }
-
-        startTrackingBtn.addEventListener('click', () => {
-            if (ball.state !== 'idle') return;
-            document.getElementById('canvas-ui').style.opacity = '0';
-            resizeAllCanvases();
-            ball.state = 'entering';
-            ball.startTime = performance.now();
-            ball.maxSpeed = 5.0; // Ensure maxSpeed is reset on start
-            startTrackingBtn.classList.add('hidden');
-            stopTrackingBtn.classList.remove('hidden');
-            updateTracking();
-            trackingTimerId = setTimeout(endTrackingSequence, 45000);
-        });
-
-        stopTrackingBtn.addEventListener('click', () => {
-            document.getElementById('canvas-ui').style.opacity = '1';
-            endTrackingSequence(false);
-        });
-
-        // ===================================================================================
-        // Rapid Movement Logic
-        // ===================================================================================
-        
-        let rapidStartTime;
-        let rapidInterval = 750;
-        const minRapidInterval = 250;
-        const rapidSpeedUpFactor = 0.985;
-
-        let rapidBall = {
-            radius: 29, // Increased size
-            color: '#22d3ee'
-        };
-
-        function drawRapidBall(isFirst = false) {
-            exerciseCtx.clearRect(0, 0, exerciseCanvas.width, exerciseCanvas.height);
-            const padding = rapidBall.radius + 10;
-            let x, y;
-
-            if (isFirst) {
-                x = exerciseCanvas.width / 2;
-                y = exerciseCanvas.height / 2;
-            } else {
-                x = Math.random() * (exerciseCanvas.width - padding * 2) + padding;
-                y = Math.random() * (exerciseCanvas.height - padding * 2) + padding;
-            }
-
-            exerciseCtx.beginPath();
-            exerciseCtx.arc(x, y, rapidBall.radius, 0, Math.PI * 2);
-            exerciseCtx.fillStyle = rapidBall.color;
-            exerciseCtx.fill();
-            exerciseCtx.closePath();
-        }
-        
-        function runRapidSequence() {
-            drawRapidBall();
-            
-            if (performance.now() - rapidStartTime > 6000) {
-                rapidInterval = Math.max(minRapidInterval, rapidInterval * rapidSpeedUpFactor);
-            }
-            
-            rapidTimeoutId = setTimeout(runRapidSequence, rapidInterval);
-        }
-
-        startRapidBtn.addEventListener('click', () => {
-            if (!rapidTimeoutId) {
-                document.getElementById('canvas-ui').style.opacity = '0';
-                resizeAllCanvases();
-                rapidInterval = 750;
-                rapidStartTime = performance.now();
-                
-                drawRapidBall(true);
-                rapidTimeoutId = setTimeout(runRapidSequence, rapidInterval);
-
-                startRapidBtn.classList.add('hidden');
-                stopRapidBtn.classList.remove('hidden');
-
-                clearTimeout(rapidExerciseTimerId);
-                rapidExerciseTimerId = setTimeout(() => stopRapidBtn.click(), 45000);
-            }
-        });
-
-        stopRapidBtn.addEventListener('click', () => {
-            if (!rapidTimeoutId && !rapidExerciseTimerId) return;
-            document.getElementById('canvas-ui').style.opacity = '1';
-            clearTimeout(rapidTimeoutId);
-            clearTimeout(rapidExerciseTimerId);
-            rapidTimeoutId = null;
-            rapidExerciseTimerId = null;
-            if(exerciseCtx) exerciseCtx.clearRect(0, 0, exerciseCanvas.width, exerciseCanvas.height);
-            drawRapidBall(true); // Draw one last ball in the center
-            stopRapidBtn.classList.add('hidden');
-            startRapidBtn.classList.remove('hidden');
-        });
-
-        // ===================================================================================
-        // Dual Rapid Movement Logic
-        // ===================================================================================
-        
-        let dualRapidStartTime;
-        let dualRapidInterval = 900;
-        const minDualRapidInterval = 350;
-        const dualRapidSpeedUpFactor = 0.985;
-
-        let dualBalls = {
-            ball1: { radius: 29, color: '#22d3ee' }, // Cyan
-            ball2: { radius: 29, color: '#facc15' }  // Yellow-400
-        };
-
-        function drawDualRapidBalls(isFirst = false) {
-            exerciseCtx.clearRect(0, 0, exerciseCanvas.width, exerciseCanvas.height);
-            const padding = dualBalls.ball1.radius + 10;
-            let x1, y1, x2, y2;
-
-            if (isFirst) {
-                x1 = exerciseCanvas.width / 4;
-                y1 = exerciseCanvas.height / 2;
-                x2 = exerciseCanvas.width * 3 / 4;
-                y2 = exerciseCanvas.height / 2;
-            } else {
-                x1 = Math.random() * (exerciseCanvas.width - padding * 2) + padding;
-                y1 = Math.random() * (exerciseCanvas.height - padding * 2) + padding;
-                
-                const minDistance = (dualBalls.ball1.radius + dualBalls.ball2.radius) * 1.5; // Ensure they don't overlap + have a small gap
-                let distance;
-                
-                do {
-                    x2 = Math.random() * (exerciseCanvas.width - padding * 2) + padding;
-                    y2 = Math.random() * (exerciseCanvas.height - padding * 2) + padding;
-                    distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-                } while (distance < minDistance);
-            }
-
-            // Draw ball 1 (Cyan)
-            exerciseCtx.beginPath();
-            exerciseCtx.arc(x1, y1, dualBalls.ball1.radius, 0, Math.PI * 2);
-            exerciseCtx.fillStyle = dualBalls.ball1.color;
-            exerciseCtx.fill();
-            exerciseCtx.closePath();
-
-            // Draw ball 2 (Yellow)
-            exerciseCtx.beginPath();
-            exerciseCtx.arc(x2, y2, dualBalls.ball2.radius, 0, Math.PI * 2);
-            exerciseCtx.fillStyle = dualBalls.ball2.color;
-            exerciseCtx.fill();
-            exerciseCtx.closePath();
-        }
-        
-        function runDualRapidSequence() {
-            drawDualRapidBalls();
-            
-            if (performance.now() - dualRapidStartTime > 6000) {
-                dualRapidInterval = Math.max(minDualRapidInterval, dualRapidInterval * dualRapidSpeedUpFactor);
-            }
-            
-            dualRapidTimeoutId = setTimeout(runDualRapidSequence, dualRapidInterval);
-        }
-
-        startDualRapidBtn.addEventListener('click', () => {
-            if (!dualRapidTimeoutId) {
-                document.getElementById('canvas-ui').style.opacity = '0';
-                resizeAllCanvases();
-                dualRapidInterval = 900;
-                dualRapidStartTime = performance.now();
-                
-                drawDualRapidBalls(true);
-                dualRapidTimeoutId = setTimeout(runDualRapidSequence, dualRapidInterval);
-
-                startDualRapidBtn.classList.add('hidden');
-                stopDualRapidBtn.classList.remove('hidden');
-
-                clearTimeout(dualRapidExerciseTimerId);
-                dualRapidExerciseTimerId = setTimeout(() => stopDualRapidBtn.click(), 45000);
-            }
-        });
-
-        stopDualRapidBtn.addEventListener('click', () => {
-            if (!dualRapidTimeoutId && !dualRapidExerciseTimerId) return;
-            document.getElementById('canvas-ui').style.opacity = '1';
-            clearTimeout(dualRapidTimeoutId);
-            clearTimeout(dualRapidExerciseTimerId);
-            dualRapidTimeoutId = null;
-            dualRapidExerciseTimerId = null;
-            if(exerciseCtx) exerciseCtx.clearRect(0, 0, exerciseCanvas.width, exerciseCanvas.height);
-            drawDualRapidBalls(true); // Draw one last set of balls in the center
-            stopDualRapidBtn.classList.add('hidden');
-            startDualRapidBtn.classList.remove('hidden');
-        });
-
-
-        // ===================================================================================
-        // Guided Exercises Logic
-        // ===================================================================================
-        const exercises = [
-            { text: "Blink for 20 seconds.", action: () => animateBlink(), duration: 20000 },
-            { text: "Keep eyes fixed forward. Gently move head side-to-side. (20s)", action: () => animateVestibular(), duration: 20000 },
-            { text: "Directional Gazing: L/R then U/D. (20s)", action: () => startCombinedDirectionalLoop(), duration: 20000 },
-            { text: "Follow the circular motion (20 seconds).", action: () => startFullCircularSequence(), duration: 20000 },
-            { text: "Close eyes tight for 5s, open, repeat 3x.", action: () => animateTightSqueeze(), duration: 18000 },
-            { text: "Focus on your hand, then a distant object. Repeat 3x.", action: () => animateFocusShift(), duration: 24000 },
-            { text: "Close your eyes gently and relax for 20 seconds.", action: () => animateGentleClose(), duration: 20000 },
-        ];
-
-        function resetPupilAndContainerState(transition = 'all 0.25s ease-out') {
-             // Reset pupil attributes
-            [pupilLeft, pupilRight].forEach(p => {
-                p.style.transition = transition;
-                p.setAttribute('cx', 50);
-                p.setAttribute('cy', 50);
-            });
-            [glareLeft, glareRight].forEach(g => {
-                g.style.transition = transition;
-                g.setAttribute('cx', 60);
-                g.setAttribute('cy', 40);
-            });
-
-            // Reset eye container position
-            [eyeContainerLeft, eyeContainerRight].forEach(c => {
-                c.style.transition = transition;
-                c.style.transform = 'translate(0px, 0px)';
-            });
-        }
-
-        function stopAllGuidedAnimations(keepLidsClosed = false) {
-            // Clear all intervals and timeouts
-            if (window.blinkInterval) clearInterval(window.blinkInterval);
-            if (window.pupilLoopTimeout) clearTimeout(window.pupilLoopTimeout);
-            if (window.gentleCloseTimeout) clearTimeout(window.gentleCloseTimeout);
-            if (window.circularMotionId) cancelAnimationFrame(window.circularMotionId);
-            if (window.tightSqueezeTimeout) clearTimeout(window.tightSqueezeTimeout);
-            if (window.focusShiftTimeout) clearTimeout(window.focusShiftTimeout);
-            if (window.guidedExerciseTimeout) clearTimeout(window.guidedExerciseTimeout);
-            if (window.guidedTimerInterval) clearInterval(window.guidedTimerInterval);
-            if (window.vestibularInterval) clearInterval(window.vestibularInterval);
-            if (window.directionalSwitchTimeout) clearTimeout(window.directionalSwitchTimeout);
-            
-            // Nullify all handles
-            window.blinkInterval = null;
-            window.pupilLoopTimeout = null;
-            window.gentleCloseTimeout = null;
-            window.circularMotionId = null;
-            window.tightSqueezeTimeout = null;
-            window.focusShiftTimeout = null;
-            window.guidedExerciseTimeout = null;
-            window.guidedTimerInterval = null;
-            window.vestibularInterval = null;
-            window.directionalSwitchTimeout = null;
-
-            // Reset UI elements
-            guidedTimerContainer.classList.remove('timer-pulse-out');
-            guidedTimerContainer.style.opacity = '0';
-            focusShiftContainer.classList.add('hidden');
-            focusShiftContainer.classList.remove('flex');
-
-            resetPupilAndContainerState();
-
-            if (!keepLidsClosed) {
-                [eyelidTopLeft, eyelidTopRight, eyelidBottomLeft, eyelidBottomRight].forEach(el => {
-                    el.style.transition = 'transform 0.25s ease-out';
-                    const isTop = el.id.includes('top');
-                    el.style.transform = isTop ? 'translateY(-50px)' : 'translateY(50px)';
-                });
-            }
-        }
-        
-        function resetGuidedExercises(isInitial = false) {
-            currentExerciseIndex = -1;
-            exercisePrompt.textContent = 'Click "Start" to begin.';
-            nextExerciseBtn.textContent = 'Start';
-            if (typeof prevExerciseBtn !== 'undefined' && prevExerciseBtn) prevExerciseBtn.classList.add('hidden');
-            stopAllGuidedAnimations(isInitial);
-            showEyes();
-            movePupil(50, 50);
-            
-            if (isInitial) {
-                setTimeout(() => {
-                    initialEyeOpeningAnimation();
-                }, 2000);
-            }
-        }
-
-        function startGuidedTimer(duration) {
-            const startTime = Date.now();
-            guidedTimerContainer.classList.remove('timer-pulse-out');
-            guidedTimerContainer.style.opacity = '1';
-
-            function updateTimer() {
-                const elapsed = Date.now() - startTime;
-                const progress = elapsed / duration;
-                const offset = circumference - progress * circumference;
-                timerProgress.style.strokeDashoffset = offset;
-                
-                const remainingSeconds = Math.ceil((duration - elapsed) / 1000);
-                timerText.textContent = remainingSeconds;
-
-                if (progress >= 1) {
-                    clearInterval(window.guidedTimerInterval);
-                    window.guidedTimerInterval = null;
-                    stopAllGuidedAnimations(); // Stop the eye movement
-                    guidedTimerContainer.classList.add('timer-pulse-out'); // Add pulse class
-                }
-            }
-            
-            if (window.guidedTimerInterval) clearInterval(window.guidedTimerInterval);
-            updateTimer();
-            window.guidedTimerInterval = setInterval(updateTimer, 50);
-        }
-
-        function showEyes() {
-            eyesWrapper.classList.remove('hidden');
-            focusShiftContainer.classList.add('hidden');
-            focusShiftContainer.classList.remove('flex');
-        }
-
-        function showFocusShift() {
-            eyesWrapper.classList.add('hidden');
-            focusShiftContainer.classList.remove('hidden');
-            focusShiftContainer.classList.add('flex');
-        }
-
-        function movePupil(cx, cy, transition = 'cx 0.5s ease-in-out, cy 0.5s ease-in-out') {
-            showEyes();
-            [pupilLeft, pupilRight, glareLeft, glareRight].forEach(el => {
-                 el.style.transition = transition;
-            });
-            
-            pupilLeft.setAttribute('cx', cx);
-            pupilLeft.setAttribute('cy', cy);
-            glareLeft.setAttribute('cx', cx + 10);
-            glareLeft.setAttribute('cy', cy - 10);
-            
-            pupilRight.setAttribute('cx', cx);
-            pupilRight.setAttribute('cy', cy);
-            glareRight.setAttribute('cx', cx + 10);
-            glareRight.setAttribute('cy', cy - 10);
-
-            const translateX = (cx - 50) * 0.1;
-            const translateY = (cy - 50) * 0.1;
-            eyeContainerLeft.style.transform = `translate(${translateX}px, ${translateY}px)`;
-            eyeContainerRight.style.transform = `translate(${translateX}px, ${translateY}px)`;
-        }
-
-        function animateVestibular() {
-            showEyes();
-            
-            movePupil(50, 50);
-            [eyeContainerLeft, eyeContainerRight].forEach(c => {
-                c.style.transition = 'none';
-                c.style.transform = 'translateX(0px)';
-            });
-
-            setTimeout(() => {
-                const moveDistance = 20;
-                let direction = 1;
-
-                function loop() {
-                    const headTranslateX = moveDistance * direction;
-                    const pupilTranslateX = 16 * direction;
-
-                    [eyeContainerLeft, eyeContainerRight].forEach(c => {
-                        c.style.transition = 'transform 1.2s ease-in-out';
-                        c.style.transform = `translateX(${headTranslateX}px)`;
-                    });
-
-                    const newPupilCx = 50 - pupilTranslateX;
-                    [pupilLeft, pupilRight].forEach(p => {
-                        p.style.transition = 'cx 1.2s ease-in-out';
-                        p.setAttribute('cx', newPupilCx);
-                    });
-                    [glareLeft, glareRight].forEach(g => {
-                        g.style.transition = 'cx 1.2s ease-in-out';
-                        g.setAttribute('cx', newPupilCx + 10);
-                    });
-                    
-                    direction *= -1;
-                }
-                
-                if(window.vestibularInterval) clearInterval(window.vestibularInterval);
-                loop();
-                window.vestibularInterval = setInterval(loop, 1400);
-            }, 100);
-        }
-
-        function startCombinedDirectionalLoop() {
-            const horizontalSequence = [{ cx: 25, cy: 50 }, { cx: 75, cy: 50 }];
-            const verticalSequence = [{ cx: 50, cy: 25 }, { cx: 50, cy: 75 }];
-            const interval = 1500;
-
-            let h_index = 0;
-            let v_index = 0;
-
-            function horizontalLoop() {
-                exercisePrompt.textContent = "Look Left & Right";
-                const nextPos = horizontalSequence[h_index];
-                movePupil(nextPos.cx, nextPos.cy);
-                h_index = (h_index + 1) % horizontalSequence.length;
-                window.pupilLoopTimeout = setTimeout(horizontalLoop, interval);
-            }
-
-            function verticalLoop() {
-                exercisePrompt.textContent = "Look Up & Down";
-                const nextPos = verticalSequence[v_index];
-                movePupil(nextPos.cx, nextPos.cy);
-                v_index = (v_index + 1) % verticalSequence.length;
-                window.pupilLoopTimeout = setTimeout(verticalLoop, interval);
-            }
-
-            horizontalLoop();
-
-            window.directionalSwitchTimeout = setTimeout(() => {
-                clearTimeout(window.pupilLoopTimeout);
-                verticalLoop();
-            }, 10000);
-        }
-
-        function runCircularLoop(options) {
-            const { 
-                duration,
-                direction, 
-                onComplete, 
-                startAngle = -Math.PI / 2,
-                maxSpeed = 0.025
-            } = options;
-
-            let start = performance.now();
-            let currentSpeed = 0;
-            const acceleration = 0.00015;
-            const radius = 35; 
-            let currentAngle = startAngle;
-
-            function loop(timestamp) {
-                const elapsed = timestamp - start;
-                
-                if (elapsed < 2000) {
-                    currentSpeed = Math.min(maxSpeed, currentSpeed + acceleration);
-                } else if (elapsed > duration - 2000) {
-                    currentSpeed = Math.max(0, currentSpeed - acceleration);
-                } else {
-                    currentSpeed = maxSpeed;
-                }
-                
-                const cx = 50 + Math.cos(currentAngle) * radius;
-                const cy = 50 + Math.sin(currentAngle) * radius;
-                movePupil(cx, cy, 'none'); 
-
-                const angleIncrement = currentSpeed * (direction === 'clockwise' ? 1 : -1);
-                currentAngle += angleIncrement;
-
-                if (elapsed < duration) {
-                    window.circularMotionId = requestAnimationFrame(loop);
-                } else {
-                    window.circularMotionId = null;
-                    if (onComplete) onComplete(currentAngle);
-                }
-            }
-            window.circularMotionId = requestAnimationFrame(loop);
-        }
-
-        function startFullCircularSequence() {
-            showEyes();
-            const halfDuration = 10000;
-            const radius = 35; 
-            const startAngle = -Math.PI / 2;
-            const startCx = 50 + Math.cos(startAngle) * radius;
-            const startCy = 50 + Math.sin(startAngle) * radius;
-
-            // Animate pupils from center to the top of the circle
-            movePupil(startCx, startCy, 'all 0.5s ease-out'); 
-
-            // Wait for the transition to finish before starting the loop
-            setTimeout(() => {
-                runCircularLoop({
-                    duration: halfDuration,
-                    direction: 'clockwise',
-                    startAngle: startAngle,
-                    onComplete: (endAngle) => {
-                        runCircularLoop({
-                            duration: halfDuration,
-                            direction: 'counter-clockwise',
-                            startAngle: endAngle,
-                            onComplete: () => {
-                                movePupil(50, 50);
-                            }
-                        });
-                    }
-                });
-            }, 500); // 500ms matches the transition duration
-        }
-
-        function animateBlink() {
-            showEyes();
-            const blinkRate = 1200; 
-
-            const blink = () => {
-                // Move pupils very slightly up for realism (Bell's phenomenon)
-                movePupil(50, 49.5, 'all 0.05s ease-in');
-
-                // Close eyelids quickly
-                [eyelidTopLeft, eyelidTopRight, eyelidBottomLeft, eyelidBottomRight].forEach(el => {
-                    el.style.transition = 'transform 0.08s ease-in';
-                });
-                eyelidTopLeft.style.transform = 'translateY(0px)';
-                eyelidTopRight.style.transform = 'translateY(0px)';
-                eyelidBottomLeft.style.transform = 'translateY(0px)'; 
-                eyelidBottomRight.style.transform = 'translateY(0px)'; 
-                
-                // Open eyelids and reset pupils
-                setTimeout(() => {
-                    [eyelidTopLeft, eyelidTopRight, eyelidBottomLeft, eyelidBottomRight].forEach(el => {
-                        el.style.transition = 'transform 0.2s ease-out';
-                        const isTop = el.id.includes('top');
-                        el.style.transform = isTop ? 'translateY(-50px)' : 'translateY(50px)';
-                    });
-                    // Move pupils back to center
-                    movePupil(50, 50, 'all 0.15s ease-out');
-                }, 100); // Shorter closed duration
-            };
-
-            blink();
-            if (window.blinkInterval) clearInterval(window.blinkInterval);
-            window.blinkInterval = setInterval(blink, blinkRate);
-        }
-
-        function animateGentleClose() {
-            showEyes();
-            movePupil(50, 50);
-
-            setTimeout(() => {
-                [eyelidTopLeft, eyelidTopRight, eyelidBottomLeft, eyelidBottomRight].forEach(el => {
-                    el.style.transition = 'transform 1.5s ease-out';
-                });
-                eyelidTopLeft.style.transform = 'translateY(0px)';
-                eyelidTopRight.style.transform = 'translateY(0px)';
-                eyelidBottomLeft.style.transform = 'translateY(0px)';
-                eyelidBottomRight.style.transform = 'translateY(0px)';
-            }, 100);
-
-            window.gentleCloseTimeout = setTimeout(() => {
-                [eyelidTopLeft, eyelidTopRight, eyelidBottomLeft, eyelidBottomRight].forEach(el => {
-                    const isTop = el.id.includes('top');
-                    el.style.transform = isTop ? 'translateY(-50px)' : 'translateY(50px)';
-                });
-            }, 20100);
-        }
-        
-        function animateTightSqueeze() {
-            showEyes();
-            movePupil(50, 50);
-            let count = 0;
-            const repetitions = 3;
-
-            function squeezeLoop() {
-                if (count >= repetitions) {
-                    return;
-                }
-                
-                [eyelidTopLeft, eyelidTopRight, eyelidBottomLeft, eyelidBottomRight].forEach(el => {
-                    el.style.transition = 'transform 0.4s ease-in';
-                });
-                eyelidTopLeft.style.transform = 'translateY(0px)';
-                eyelidTopRight.style.transform = 'translateY(0px)';
-                eyelidBottomLeft.style.transform = 'translateY(0px)';
-                eyelidBottomRight.style.transform = 'translateY(0px)';
-
-                window.tightSqueezeTimeout = setTimeout(() => {
-                    [eyelidTopLeft, eyelidTopRight, eyelidBottomLeft, eyelidBottomRight].forEach(el => {
-                        el.style.transition = 'transform 0.3s ease-out';
-                        const isTop = el.id.includes('top');
-                        el.style.transform = isTop ? 'translateY(-50px)' : 'translateY(50px)';
-                    });
-
-                    count++;
-                    window.tightSqueezeTimeout = setTimeout(squeezeLoop, 1000);
-                }, 5000);
-            }
-            setTimeout(squeezeLoop, 600);
-        }
-
-        function animateFocusShift() {
-            showFocusShift();
-            let count = 0;
-            const repetitions = 3;
-
-            function focusLoop() {
-                if (count >= repetitions) {
-                    return;
-                }
-
-                exercisePrompt.textContent = "Focus on your hand (near).";
-                focusNearGroup.style.opacity = '1';
-                focusFarGroup.style.opacity = '0';
-
-                window.focusShiftTimeout = setTimeout(() => {
-                    exercisePrompt.textContent = "Focus on a distant object (far).";
-                    focusNearGroup.style.opacity = '0';
-                    focusFarGroup.style.opacity = '1';
-
-                    window.focusShiftTimeout = setTimeout(() => {
-                        count++;
-                        focusLoop();
-                    }, 4000);
-                }, 4000);
-            }
-            focusLoop();
-        }
-
-        nextExerciseBtn.addEventListener('click', () => {
-            if (currentExerciseIndex === -1) {
-                runGuidedExercise(0);
-            } else if (currentExerciseIndex < exercises.length - 1) {
-                runGuidedExercise(currentExerciseIndex + 1);
-            } else {
-                document.getElementById('guided-to-canvas-btn').click();
-            }
-        });
-
-        function runGuidedExercise(index) {
-            if (index < 0 || index >= exercises.length) return;
-            
-            stopAllGuidedAnimations();
-            void guidedTimerContainer.offsetHeight; // Recalculate styles
-
-            currentExerciseIndex = index;
-            const exercise = exercises[currentExerciseIndex];
-            exercisePrompt.textContent = exercise.text;
-            
-            if (exercise.duration) {
-                startGuidedTimer(exercise.duration);
-            }
-            
-            exercise.action();
-
-            nextExerciseBtn.textContent = (currentExerciseIndex === exercises.length - 1) ? 'Start Next Module' : 'Next Exercise';
-            if (typeof prevExerciseBtn !== 'undefined' && prevExerciseBtn) prevExerciseBtn.classList.toggle('hidden', currentExerciseIndex <= 0);
-        }
-        
-        // ===================================================================================
-        // Gemini API Logic
-        // ===================================================================================
-        async function getEyeHealthTip() {
-            tipContainer.classList.remove('hidden');
-            tipText.classList.add('hidden');
-            tipLoader.classList.remove('hidden');
-            getTipBtn.disabled = true;
-
-            const prompt = "Tell me a surprising and short fun fact or tip about eye health. Keep it to one or two sentences.";
-            let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-            const payload = { contents: chatHistory };
-            const apiKey = ""; // API key will be automatically provided by the environment
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`API request failed with status ${response.status}`);
-                }
-
-                const result = await response.json();
-                
-                let generatedText = "Sorry, I couldn't fetch a tip right now. Please try again later.";
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    generatedText = result.candidates[0].content.parts[0].text;
-                }
-                
-                tipText.textContent = generatedText;
-
-            } catch (error) {
-                console.error("Error fetching eye health tip:", error);
-                tipText.textContent = "Sorry, an error occurred while fetching the tip.";
-            } finally {
-                tipLoader.classList.add('hidden');
-                tipText.classList.remove('hidden');
-                getTipBtn.disabled = false;
-            }
-        }
-
-        getTipBtn.addEventListener('click', getEyeHealthTip);
-
-        // ===================================================================================
-        // UI Controls & Keyboard Navigation
-        // ===================================================================================
-        hideUiBtn.addEventListener('click', () => {
-            uiContainers.forEach(container => {
-                container.classList.toggle('ui-hidden');
-            });
-            hideIcon.classList.toggle('hidden');
-            showIcon.classList.toggle('hidden');
-        });
-
-        function toggleFullscreen() {
-            const docEl = document.documentElement;
-            const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
-            const exitFS = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
-            const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-
-            if (!fullscreenElement) {
-                if (requestFS) {
-                    requestFS.call(docEl).catch(err => {
-                        console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-                    });
-                }
-            } else {
-                if (exitFS) {
-                    exitFS.call(document);
-                }
-            }
-        }
-
-        function updateFullscreenIcon() {
-            const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-            if (fullscreenElement) {
-                fullscreenEnterIcon.classList.add('hidden');
-                fullscreenExitIcon.classList.remove('hidden');
-            } else {
-                fullscreenEnterIcon.classList.remove('hidden');
-                fullscreenExitIcon.classList.add('hidden');
-            }
-        }
-
-        fullscreenBtn.addEventListener('click', toggleFullscreen);
-        document.addEventListener('fullscreenchange', updateFullscreenIcon);
-        document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
-        document.addEventListener('mozfullscreenchange', updateFullscreenIcon);
-        document.addEventListener('MSFullscreenChange', updateFullscreenIcon);
-
-        document.addEventListener('keydown', (e) => {
-            const activeSection = [...sections].find(s => !s.classList.contains('hidden'));
-            if (!activeSection) return;
-
-            switch(e.key) {
-                case 'ArrowRight':
-                    if (activeSection.id === 'guided-exercises') {
-                        nextExerciseBtn.click();
-                    }
-                    break;
-                case 'n':
-                case 'N':
-                    if (activeSection.id === 'guided-exercises') {
-                        document.getElementById('guided-to-canvas-btn').click();
-                    } else if (activeSection.id === 'canvas-exercises') {
-                        document.getElementById('canvas-next-btn').click();
-                    } else if (activeSection.id === 'completion-screen') {
-                        restartTrainingBtn.click();
-                    }
-                    break;
-            }
-        });
-
-        function updateTime() {
-            if(timeDisplay) {
-                const now = new Date();
-                const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                timeDisplay.textContent = timeString;
-            }
-        }
-        setInterval(updateTime, 1000);
-        updateTime();
-
-
-        // ===================================================================================
-        // Confetti Logic
-        // ===================================================================================
-        function launchConfetti() {
-            const canvas = document.getElementById('confetti-canvas');
-            if (!canvas) return;
-
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-
-            const myConfetti = confetti.create(canvas, {
-                resize: true,
-                useWorker: false // Changed to false to prevent error
-            });
-
-            myConfetti({
-                particleCount: 150,
-                spread: 80,
-                origin: { y: 0.6 },
-                colors: ['#22d3ee', '#67e8f9', '#a5f3fc', '#ffffff']
-            });
-
-            setTimeout(() => {
-                myConfetti({
-                    particleCount: 100,
-                    angle: 60,
-                    spread: 65,
-                    origin: { x: 0 },
-                    colors: ['#22d3ee', '#67e8f9', '#a5f3fc', '#ffffff']
-                });
-            }, 250);
-            
-            setTimeout(() => {
-                myConfetti({
-                    particleCount: 100,
-                    angle: 120,
-                    spread: 65,
-                    origin: { x: 1 },
-                    colors: ['#22d3ee', '#67e8f9', '#a5f3fc', '#ffffff']
-                });
-            }, 400);
-        }
-
-    });
-    </script>
-</body>
-</html>
+  );
+}
