@@ -1,212 +1,510 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speed Reader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for a cleaner look */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom focus styles */
+        input[type="number"], select {
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        input[type="number"]:focus, select:focus {
+            --tw-ring-color: #2563eb;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px var(--tw-ring-color);
+            outline: none;
+        }
+        .focus-letter {
+            color: #DC2626; /* red-600 */
+        }
+        /* Hide number input spinners */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
 
-// Helper to format time
-const formatTime = (seconds) => {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-};
+    <main class="flex flex-col lg:flex-row min-h-screen">
 
-// --- Component for the Animated Dots Background ---
-const DotsBackground = () => {
-  // This function generates the text-shadow string for a layer of dots.
-  const createTextShadow = (count) => {
-    let shadow = [];
-    for (let i = 0; i < count; i++) {
-      const x = (-0.5 + Math.random() * 3) + 'em';
-      const y = (-0.5 + Math.random() * 3) + 'em';
-      // Reverted lightness from 65% back to 50%
-      const color = `hsla(${Math.random() * 360}, 100%, 50%, 0.9)`;
-      shadow.push(`${x} ${y} 2px ${color}`);
-    }
-    return shadow.join(', ');
-  };
+        <!-- Settings Panel -->
+        <aside class="w-full lg:w-1/3 xl:w-1/4 p-6 bg-white shadow-xl z-10">
+            <h1 class="text-3xl font-bold mb-6 text-gray-800">Speed Reader</h1>
+            
+            <div class="space-y-5">
+                <!-- Font Settings -->
+                <div>
+                    <label for="font-select" class="block text-sm font-medium text-gray-700 mb-1">Font</label>
+                    <select id="font-select" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                        <option>Arial</option>
+                        <option>Verdana</option>
+                        <option selected>Georgia</option>
+                        <option>Times New Roman</option>
+                        <option>Courier New</option>
+                        <option>Inter</option>
+                    </select>
+                </div>
 
-  // useMemo generates the text-shadow string only once.
-  const dotLayers = useMemo(() => [
-    // Reverted dot count from 50 back to 40
-    { id: 1, textShadow: createTextShadow(40), duration: '44s', delay: '-27s' },
-    { id: 2, textShadow: createTextShadow(40), duration: '43s', delay: '-32s' },
-    { id: 3, textShadow: createTextShadow(40), duration: '42s', delay: '-23s' },
-    { id: 4, textShadow: createTextShadow(40), duration: '41s', delay: '-19s' },
-  ], []);
+                <!-- Font Size -->
+                <div>
+                    <label for="font-size" class="block text-sm font-medium text-gray-700 mb-1">Font Size (px)</label>
+                    <input type="number" id="font-size" value="110" min="10" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                </div>
 
-  return (
-    <div className="absolute inset-0 w-full h-full overflow-hidden" style={{ mixBlendMode: 'screen' }}>
-      {dotLayers.map(layer => (
-        <div
-          key={layer.id}
-          className="absolute top-1/2 left-1/2 w-[3em] h-[3em]"
-          style={{
-            fontSize: '52px',
-            animation: `move ${layer.duration} ${layer.delay} infinite ease-in-out alternate`,
-          }}
-        >
-          <div
-            className="w-full h-full"
-            style={{
-              color: 'transparent',
-              textShadow: layer.textShadow,
-            }}
-          >
-            V
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
+                <!-- WPM Dropdown -->
+                <div>
+                    <label for="wpm-select" class="block text-sm font-medium text-gray-700 mb-1">Words per minute (WPM)</label>
+                    <select id="wpm-select" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                        <option value="120">120 WPM (15 Frames/Word)</option>
+                        <option value="180">180 WPM (10 Frames/Word)</option>
+                        <option value="300" selected>300 WPM (6 Frames/Word)</option>
+                        <option value="360">360 WPM (5 Frames/Word)</option>
+                        <option value="450">450 WPM (4 Frames/Word)</option>
+                        <option value="600">600 WPM (3 Frames/Word)</option>
+                        <option value="900">900 WPM (2 Frames/Word)</option>
+                        <option value="1800">1800 WPM (1 Frame/Word)</option>
+                    </select>
+                </div>
 
+                <!-- Chunk Size -->
+                <div>
+                    <label for="chunk-size" class="block text-sm font-medium text-gray-700 mb-1">Words per slide (Chunk size)</label>
+                    <input type="number" id="chunk-size" value="1" min="1" max="10" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                </div>
 
-// --- Main App Component ---
-export default function App() {
-  const [duration, setDuration] = useState(10 * 60);
-  const [timeLeft, setTimeLeft] = useState(duration);
-  const [isActive, setIsActive] = useState(false);
-  const [lightAssist, setLightAssist] = useState(false);
-  const timerRef = useRef(null);
+                <!-- Letter Spacing -->
+                <div>
+                    <label for="letter-spacing" class="block text-sm font-medium text-gray-700 mb-1">Letter Spacing</label>
+                    <select id="letter-spacing" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                        <option value="0em">Normal</option>
+                        <option value="0.05em" selected>Slight</option>
+                        <option value="0.1em">Wide</option>
+                        <option value="0.15em">Very Wide</option>
+                    </select>
+                </div>
 
-  useEffect(() => {
-    if (isActive && timeLeft > 0) {
-      timerRef.current = setInterval(() => {
-        setTimeLeft((prevTime) => prevTime - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
-      clearInterval(timerRef.current);
-      setIsActive(false);
-    }
-    return () => clearInterval(timerRef.current);
-  }, [isActive, timeLeft]);
+                <!-- Other Options -->
+                <fieldset class="space-y-2 pt-4">
+                    <legend class="text-sm font-medium text-gray-700 mb-1">Options</legend>
+                    <div class="relative flex items-start">
+                        <div class="flex items-center h-5">
+                            <input type="checkbox" id="true-fullscreen-check" class="h-4 w-4 text-blue-600 border-gray-300 rounded" checked>
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label for="true-fullscreen-check" class="font-medium text-gray-700">True Fullscreen</label>
+                        </div>
+                    </div>
+                    <div class="relative flex items-start">
+                        <div class="flex items-center h-5">
+                            <input type="checkbox" id="ramp-up-check" class="h-4 w-4 text-blue-600 border-gray-300 rounded" checked>
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label for="ramp-up-check" class="font-medium text-gray-700">Enable speed ramp-up</label>
+                        </div>
+                    </div>
+                    <div class="relative flex items-start">
+                        <div class="flex items-center h-5">
+                            <input type="checkbox" id="show-time-check" class="h-4 w-4 text-blue-600 border-gray-300 rounded" checked>
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label for="show-time-check" class="font-medium text-gray-700">Show Remaining Time</label>
+                        </div>
+                    </div>
+                     <div class="relative flex items-start">
+                        <div class="flex items-center h-5">
+                            <input type="checkbox" id="rtl-check" class="h-4 w-4 text-blue-600 border-gray-300 rounded">
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label for="rtl-check" class="font-medium text-gray-700">Right-to-Left (RTL) Text</label>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+        </aside>
 
-  const handleStart = () => {
-    if (timeLeft > 0) {
-      setIsActive(true);
-    }
-  };
-
-  const handlePause = () => {
-    setIsActive(false);
-  };
-
-  const handleReset = () => {
-    setIsActive(false);
-    setTimeLeft(duration);
-  };
-
-  const selectDuration = (minutes) => {
-    const newDuration = minutes * 60;
-    setDuration(newDuration);
-    setTimeLeft(newDuration);
-    setIsActive(false);
-  };
-  
-  const visualizerClasses = `
-    absolute inset-0 transition-opacity duration-1000 ease-in-out bg-black
-    ${lightAssist && isActive ? 'opacity-100' : 'opacity-0'}
-  `;
-
-  return (
-    <div className="bg-black text-white min-h-screen flex flex-col items-center justify-center p-4 md:p-8 font-sans relative overflow-hidden">
-      
-      {/* Light Assist Visualizer Background */}
-      <div className={visualizerClasses} style={{ zIndex: 1 }}>
-        <DotsBackground />
-      </div>
-      
-      {/* Main Content Wrapper */}
-      <div className={`relative z-10 w-full flex flex-col items-center transition-all duration-500 ease-in-out ${isActive ? 'justify-center h-full' : 'justify-start'}`}>
-        
-        {/* Setup View (Title & Instructions) */}
-        <div className={`transition-opacity duration-500 w-full max-w-2xl ${isActive ? 'opacity-0 h-0' : 'opacity-100'}`}>
-          {!isActive && (
-            <>
-              <header className="text-center mb-6">
-                <h1 className="text-4xl md:text-5xl font-bold text-cyan-300">Image Streaming Guide</h1>
-                <p className="text-gray-400 mt-2">A practice to enhance your mind's eye.</p>
-              </header>
-              <section className="mb-6 bg-black/30 backdrop-blur-sm p-4 rounded-lg">
-                <h2 className="text-2xl font-semibold text-cyan-400 mb-3">Instructions</h2>
-                <ol className="list-decimal list-inside space-y-2 text-gray-300">
-                  <li>Close your eyes and describe aloud the images you see, no matter how faint.</li>
-                  <li>Speak continuously in the present tense (e.g., "I see a blue circle turning...").</li>
-                  <li>Engage all your senses in your description. What do you hear, feel, smell?</li>
-                  <li>Keep the stream of description flowing for the duration of the timer.</li>
-                </ol>
-              </section>
-            </>
-          )}
-        </div>
-
-        {/* Timer Display & Controls Container */}
-        <div className={`w-full max-w-2xl flex flex-col items-center transition-all duration-500 ease-in-out ${isActive ? 'flex-grow justify-center' : ''}`}>
-          <div className="text-center my-8">
-            <p className="text-7xl md:text-8xl font-mono tracking-tighter text-white">{formatTime(timeLeft)}</p>
-          </div>
-
-          <div className="flex justify-center items-center gap-4 mb-6">
-            {!isActive ? (
-              <button onClick={handleStart} className="bg-cyan-500 hover:bg-cyan-400 text-gray-900 font-bold py-3 px-8 rounded-full transition-transform transform hover:scale-105">
-                Start
+        <!-- Main Content Panel -->
+        <section class="w-full lg:w-2/3 xl:w-3/4 p-6 flex flex-col">
+            <label for="text-input" class="text-xl font-bold mb-4 text-gray-800">Your Text</label>
+            <textarea id="text-input" class="w-full flex-grow p-4 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 text-base" placeholder="Paste your text here..."></textarea>
+            <div id="controls" class="mt-4 flex flex-wrap items-center gap-4">
+              <button id="start-btn" class="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition-transform transform hover:scale-105">
+                Start Reading
               </button>
-            ) : (
-              <button onClick={handlePause} className="bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold py-3 px-8 rounded-full transition-transform transform hover:scale-105">
+              <button id="pause-btn" class="hidden px-8 py-3 bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-75 transition-transform transform hover:scale-105">
                 Pause
               </button>
-            )}
-            <button onClick={handleReset} className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-8 rounded-full transition-transform transform hover:scale-105">
-              Reset
-            </button>
-          </div>
-
-          {/* Hide duration selection when timer is active */}
-          {!isActive && (
-            <div className="flex justify-center gap-2 md:gap-4 mb-8">
-              {[5, 10, 20].map((min) => (
-                <button
-                  key={min}
-                  onClick={() => selectDuration(min)}
-                  className={`py-2 px-4 rounded-full text-sm font-semibold transition ${
-                    duration === min * 60
-                      ? 'bg-cyan-400 text-gray-900 shadow-lg'
-                      : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                  }`}
-                >
-                  {min} min
-                </button>
-              ))}
+               <button id="reset-btn" class="px-8 py-3 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75 transition-transform transform hover:scale-105">
+                Reset
+              </button>
             </div>
-          )}
+        </section>
+    </main>
 
-          <div className="flex items-center justify-center gap-4 border-t border-gray-700/50 pt-6 w-full max-w-xs">
-            <span className="text-lg font-medium text-gray-300">Light Assist</span>
-            <label htmlFor="light-assist-toggle" className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                id="light-assist-toggle" 
-                className="sr-only peer"
-                checked={lightAssist}
-                onChange={() => setLightAssist(!lightAssist)}
-              />
-              <div className="w-14 h-8 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-cyan-500"></div>
-            </label>
-          </div>
-          <p className="text-center text-xs text-gray-500 mt-2">A gentle moving light for when your mind's eye is dark.</p>
+    <!-- Fullscreen Reader Container -->
+    <div id="reader-container" class="fixed inset-0 bg-white flex-col items-center justify-center hidden z-50">
+        <!-- Top Guide -->
+        <div class="w-full max-w-5xl h-12 border-b-2 border-gray-300 relative mt-auto">
+            <div class="absolute bottom-0 w-px h-4 bg-gray-400 transform -translate-x-1/2" style="left: 40%;"></div>
         </div>
-      </div>
-      
-      <style>
-        {`
-          @keyframes move {
-            from {
-              transform: rotate(0deg) scale(12) translateX(-20px);
-            }
-            to {
-              /* Reverted scale from 22 back to 18 */
-              transform: rotate(360deg) scale(18) translateX(20px);
-            }
-          }
-        `}
-      </style>
+        
+        <!-- Word Display Wrapper -->
+        <div id="word-display-wrapper" class="flex-grow w-full relative flex items-center overflow-hidden">
+            <p id="word-display" class="absolute whitespace-nowrap"></p>
+        </div>
+
+        <!-- Bottom Guide -->
+        <div class="w-full max-w-5xl h-12 border-t-2 border-gray-300 relative mb-auto">
+            <div class="absolute top-0 w-px h-4 bg-gray-400 transform -translate-x-1/2" style="left: 40%;"></div>
+        </div>
+
+        <!-- Fullscreen Controls -->
+        <button id="exit-fullscreen-btn" title="Exit Reader" class="absolute top-5 right-5 text-gray-500 hover:text-black transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+        <div id="remaining-time-display" class="absolute bottom-5 text-gray-500 text-lg font-medium"></div>
     </div>
-  );
-}
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
+            const elements = {
+                settings: {
+                    fontSelect: document.getElementById('font-select'),
+                    fontSize: document.getElementById('font-size'),
+                    wpmSelect: document.getElementById('wpm-select'),
+                    chunkSize: document.getElementById('chunk-size'),
+                    letterSpacing: document.getElementById('letter-spacing'),
+                    trueFullscreenCheck: document.getElementById('true-fullscreen-check'),
+                    rampUpCheck: document.getElementById('ramp-up-check'),
+                    showTimeCheck: document.getElementById('show-time-check'),
+                    rtlCheck: document.getElementById('rtl-check'),
+                },
+                textInput: document.getElementById('text-input'),
+                controls: {
+                    startBtn: document.getElementById('start-btn'),
+                    pauseBtn: document.getElementById('pause-btn'),
+                    resetBtn: document.getElementById('reset-btn'),
+                },
+                reader: {
+                    container: document.getElementById('reader-container'),
+                    wordDisplay: document.getElementById('word-display'),
+                    exitBtn: document.getElementById('exit-fullscreen-btn'),
+                    timeDisplay: document.getElementById('remaining-time-display'),
+                }
+            };
+
+            // --- State Management ---
+            const state = {
+                words: [],
+                currentIndex: 0,
+                wpm: 300,
+                chunkSize: 1,
+                isPlaying: false,
+                isPaused: false,
+                timerId: null,
+                totalWords: 0,
+            };
+            
+            const RAMP_UP_WORDS = 10; // Number of words to ramp up speed
+
+            // --- Core Functions ---
+
+            /**
+             * Updates the application state from the settings panel UI.
+             */
+            function updateSettings() {
+                state.wpm = parseInt(elements.settings.wpmSelect.value, 10) || 300;
+                state.chunkSize = parseInt(elements.settings.chunkSize.value, 10) || 1;
+                
+                const fontFamily = elements.settings.fontSelect.value;
+                const fontSize = `${elements.settings.fontSize.value}px`;
+                const fontWeight = '500';
+                const letterSpacing = elements.settings.letterSpacing.value;
+
+                const wordEl = elements.reader.wordDisplay;
+                wordEl.style.fontFamily = fontFamily;
+                wordEl.style.fontSize = fontSize;
+                wordEl.style.fontWeight = fontWeight;
+                wordEl.style.letterSpacing = letterSpacing;
+
+                elements.reader.timeDisplay.style.display = elements.settings.showTimeCheck.checked ? 'block' : 'none';
+            }
+
+            /**
+             * Calculates the Optimal Recognition Point (ORP) index for a word.
+             * This determines which letter becomes the red "focus letter".
+             * @param {string} word The word to calculate the ORP for.
+             * @returns {number} The index of the character to highlight.
+             */
+            function getORPIndex(word) {
+                const len = word.length;
+                if (len <= 1) return 0;      // 1-letter word
+                if (len <= 5) return 1;      // 2-5 letter word
+                if (len <= 9) return 2;      // 6-9 letter word
+                if (len <= 13) return 3;     // 10-13 letter word
+                return 4;                    // 14+ letter word
+            }
+
+            /**
+             * Displays the next word/chunk in the reader, perfectly centering the focus letter.
+             */
+            function displayNextWord() {
+                const chunk = state.words.slice(state.currentIndex, state.currentIndex + state.chunkSize).join(' ');
+                const wordEl = elements.reader.wordDisplay;
+                
+                if (chunk) {
+                    const firstWord = chunk.split(' ')[0];
+                    const orpIndex = getORPIndex(firstWord);
+                    
+                    const beforeText = chunk.substring(0, orpIndex);
+                    const focusText = chunk.substring(orpIndex, orpIndex + 1);
+                    const afterText = chunk.substring(orpIndex + 1);
+
+                    // Set the HTML with spans to measure their widths
+                    wordEl.innerHTML = 
+                        `<span id="word-before">${beforeText}</span>` +
+                        `<span id="word-focus" class="focus-letter">${focusText}</span>` +
+                        `<span id="word-after">${afterText}</span>`;
+
+                    // Measure the rendered widths of the parts of the word
+                    const beforeEl = document.getElementById('word-before');
+                    const focusEl = document.getElementById('word-focus');
+                    
+                    const beforeWidth = beforeEl.offsetWidth;
+                    const focusWidth = focusEl.offsetWidth;
+
+                    // Calculate the offset needed to center the middle of the focus letter
+                    const offset = beforeWidth + (focusWidth / 2);
+
+                    // Position the start of the element at the new anchor, then translate it back by the calculated offset
+                    wordEl.style.left = '40%';
+                    wordEl.style.transform = `translateX(-${offset}px)`;
+
+                } else {
+                    wordEl.innerHTML = '';
+                }
+
+                updateRemainingTime();
+            }
+            
+            /**
+             * Updates the remaining time display.
+             */
+            function updateRemainingTime() {
+                if (!elements.settings.showTimeCheck.checked) {
+                    elements.reader.timeDisplay.innerHTML = '';
+                    return;
+                }
+                const wordsLeft = Math.max(0, state.totalWords - state.currentIndex);
+                const secondsLeft = Math.ceil((wordsLeft / state.wpm) * 60);
+
+                if (secondsLeft > 0) {
+                    const minutes = Math.floor(secondsLeft / 60);
+                    const seconds = secondsLeft % 60;
+                    elements.reader.timeDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')} remaining`;
+                } else {
+                     elements.reader.timeDisplay.textContent = 'Done!';
+                }
+            }
+
+
+            // --- Control Flow Functions ---
+
+            /**
+             * The main loop for displaying words. Uses setTimeout for variable delays.
+             */
+            function scheduleNextWord() {
+                if (state.currentIndex >= state.words.length || !state.isPlaying) {
+                    if (state.currentIndex >= state.words.length) endReading();
+                    return;
+                }
+                
+                displayNextWord();
+                state.currentIndex += state.chunkSize;
+
+                let currentWPM = state.wpm;
+                // Ramp up speed if the option is checked
+                if (elements.settings.rampUpCheck.checked && state.currentIndex < RAMP_UP_WORDS * state.chunkSize) {
+                    const startWPM = state.wpm / 2;
+                    const progress = state.currentIndex / (RAMP_UP_WORDS * state.chunkSize);
+                    currentWPM = startWPM + (state.wpm - startWPM) * progress;
+                }
+
+                const delay = (60 / currentWPM) * 1000 * state.chunkSize;
+                state.timerId = setTimeout(scheduleNextWord, delay);
+            }
+
+            /**
+             * Prepares and starts the reading process.
+             */
+            function initializeReading() {
+                updateSettings();
+                state.words = elements.textInput.value.split(/\s+/).filter(word => word.length > 0);
+                state.totalWords = state.words.length;
+                state.currentIndex = 0;
+
+                elements.reader.container.classList.remove('hidden');
+                elements.reader.container.classList.add('flex');
+                
+                // Start a silent 3-second delay
+                setTimeout(beginReading, 3000);
+            }
+
+            /**
+             * Starts the reading process, handling fullscreen if requested.
+             */
+            function startReading() {
+                const text = elements.textInput.value;
+                if (!text.trim()) {
+                    alert('Please paste some text to read.');
+                    return;
+                }
+
+                if (state.isPlaying && state.isPaused) {
+                    resumeReading();
+                    return;
+                }
+                
+                if (elements.settings.trueFullscreenCheck.checked) {
+                    document.documentElement.requestFullscreen().then(initializeReading).catch(err => {
+                        alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+                    });
+                } else {
+                    initializeReading();
+                }
+            }
+            
+            /**
+             * Begins the word display interval.
+             */
+            function beginReading() {
+                if(state.isPlaying) return; // Prevent multiple starts if button is spammed
+                state.isPlaying = true;
+                state.isPaused = false;
+                elements.controls.startBtn.classList.add('hidden');
+                elements.controls.pauseBtn.classList.remove('hidden');
+                scheduleNextWord();
+            }
+
+            /**
+             * Pauses the reading process.
+             */
+            function pauseReading() {
+                if (!state.isPlaying) return;
+                clearTimeout(state.timerId);
+                state.isPlaying = false;
+                state.isPaused = true;
+                elements.controls.pauseBtn.classList.add('hidden');
+                elements.controls.startBtn.classList.remove('hidden');
+                elements.controls.startBtn.textContent = 'Resume';
+            }
+
+            /**
+             * Resumes reading from a paused state.
+             */
+            function resumeReading() {
+                if (!state.isPaused) return;
+                beginReading();
+                elements.controls.startBtn.textContent = 'Start Reading'; // Reset button text
+            }
+            
+            /**
+             * Resets the reader to its initial state.
+             */
+            function resetReading() {
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                }
+                clearTimeout(state.timerId);
+                state.isPlaying = false;
+                state.isPaused = false;
+                state.currentIndex = 0;
+                state.words = [];
+                elements.reader.container.classList.add('hidden');
+                elements.reader.container.classList.remove('flex');
+                elements.reader.wordDisplay.innerHTML = '';
+                elements.reader.wordDisplay.style.transform = 'translateX(0px)';
+                elements.reader.timeDisplay.innerHTML = '';
+                elements.controls.pauseBtn.classList.add('hidden');
+                elements.controls.startBtn.classList.remove('hidden');
+                elements.controls.startBtn.textContent = 'Start Reading';
+            }
+
+            /**
+             * Called when all words have been read.
+             */
+            function endReading() {
+                clearTimeout(state.timerId);
+                state.isPlaying = false;
+                setTimeout(() => {
+                    resetReading();
+                }, 1500); // Wait a moment on the last word before closing
+            }
+
+            /**
+             * Handles the browser exiting fullscreen mode (e.g., via Esc key).
+             */
+            function handleFullscreenChange() {
+                if (!document.fullscreenElement && state.isPlaying) {
+                    resetReading();
+                }
+            }
+
+
+            // --- Event Listeners ---
+            function setupEventListeners() {
+                Object.values(elements.settings).forEach(el => {
+                    el.addEventListener('change', updateSettings);
+                    if(el.type === 'number') el.addEventListener('input', updateSettings);
+                });
+
+                elements.controls.startBtn.addEventListener('click', startReading);
+                elements.controls.pauseBtn.addEventListener('click', pauseReading);
+                elements.controls.resetBtn.addEventListener('click', resetReading);
+                elements.reader.exitBtn.addEventListener('click', resetReading);
+                
+                document.addEventListener('fullscreenchange', handleFullscreenChange);
+                
+                // Keyboard controls for the reader
+                document.addEventListener('keydown', (e) => {
+                    if (!state.isPlaying && !state.isPaused) return; // Only if reader is active
+                    if (e.code === 'Space') {
+                        e.preventDefault(); // prevent page scroll
+                        if (state.isPlaying && !state.isPaused) {
+                            pauseReading();
+                        } else {
+                            resumeReading();
+                        }
+                    }
+                    if (e.code === 'Escape' && !document.fullscreenElement) {
+                        // Only trigger reset if not in fullscreen, as Esc is handled by fullscreen exit
+                        resetReading();
+                    }
+                });
+            }
+
+            // --- Initialization ---
+            updateSettings();
+            setupEventListeners();
+        });
+    </script>
+</body>
+</html>
+
