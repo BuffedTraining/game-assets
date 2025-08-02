@@ -8,6 +8,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        // Set up dark mode utility from Tailwind CSS
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <style id="dynamic-styles">
+        /* This will be populated by JavaScript for the focus letter color */
+    </style>
     <style>
         /* Custom styles for a cleaner look */
         body {
@@ -23,9 +32,6 @@
             box-shadow: 0 0 0 2px var(--tw-ring-color);
             outline: none;
         }
-        .focus-letter {
-            color: #DC2626; /* red-600 */
-        }
         /* Hide number input spinners */
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button {
@@ -37,23 +43,23 @@
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 dark:bg-gray-900">
 
     <main class="flex flex-col lg:flex-row min-h-screen">
 
         <!-- Settings Panel -->
-        <aside class="w-full lg:w-1/3 xl:w-1/4 p-6 bg-white shadow-xl z-10">
-            <h1 class="text-3xl font-bold mb-6 text-gray-800">Speed Reader</h1>
+        <aside class="w-full lg:w-1/3 xl:w-1/4 p-6 bg-white dark:bg-gray-800 shadow-xl z-10">
+            <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-gray-100">Speed Reader</h1>
             
             <div class="space-y-5">
                 <!-- Font Settings -->
                 <div>
-                    <label for="font-select" class="block text-sm font-medium text-gray-700 mb-1">Font</label>
-                    <select id="font-select" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                    <label for="font-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Font</label>
+                    <select id="font-select" class="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 rounded-md shadow-sm">
                         <option>Arial</option>
                         <option>Verdana</option>
-                        <option selected>Georgia</option>
-                        <option>Times New Roman</option>
+                        <option>Georgia</option>
+                        <option selected>Times New Roman</option>
                         <option>Courier New</option>
                         <option>Inter</option>
                     </select>
@@ -61,35 +67,14 @@
 
                 <!-- Font Size -->
                 <div>
-                    <label for="font-size" class="block text-sm font-medium text-gray-700 mb-1">Font Size (px)</label>
-                    <input type="number" id="font-size" value="110" min="10" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                </div>
-
-                <!-- WPM Dropdown -->
-                <div>
-                    <label for="wpm-select" class="block text-sm font-medium text-gray-700 mb-1">Words per minute (WPM)</label>
-                    <select id="wpm-select" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                        <option value="120">120 WPM (15 Frames/Word)</option>
-                        <option value="180">180 WPM (10 Frames/Word)</option>
-                        <option value="300" selected>300 WPM (6 Frames/Word)</option>
-                        <option value="360">360 WPM (5 Frames/Word)</option>
-                        <option value="450">450 WPM (4 Frames/Word)</option>
-                        <option value="600">600 WPM (3 Frames/Word)</option>
-                        <option value="900">900 WPM (2 Frames/Word)</option>
-                        <option value="1800">1800 WPM (1 Frame/Word)</option>
-                    </select>
-                </div>
-
-                <!-- Chunk Size -->
-                <div>
-                    <label for="chunk-size" class="block text-sm font-medium text-gray-700 mb-1">Words per slide (Chunk size)</label>
-                    <input type="number" id="chunk-size" value="1" min="1" max="10" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                    <label for="font-size" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Font Size (px)</label>
+                    <input type="number" id="font-size" value="130" min="10" class="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 rounded-md shadow-sm">
                 </div>
 
                 <!-- Letter Spacing -->
                 <div>
-                    <label for="letter-spacing" class="block text-sm font-medium text-gray-700 mb-1">Letter Spacing</label>
-                    <select id="letter-spacing" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                    <label for="letter-spacing" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Letter Spacing</label>
+                    <select id="letter-spacing" class="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 rounded-md shadow-sm">
                         <option value="0em">Normal</option>
                         <option value="0.05em" selected>Slight</option>
                         <option value="0.1em">Wide</option>
@@ -97,15 +82,46 @@
                     </select>
                 </div>
 
+                <!-- Highlight Color -->
+                <div>
+                    <label for="highlight-color" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Highlight Color</label>
+                    <input type="color" id="highlight-color" value="#EF4444" class="w-full h-10 p-1 border border-gray-300 dark:border-gray-600 rounded-md cursor-pointer">
+                </div>
+
+                <!-- Context Sensitive Delays -->
+                <fieldset class="space-y-2 pt-4">
+                    <legend class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Adaptive Delays (Base ms at 300 WPM)</legend>
+                    <div class="flex items-center space-x-2">
+                        <label for="comma-delay-value" class="text-sm font-medium text-gray-700 dark:text-gray-300 flex-grow">Comma (,)</label>
+                        <input type="number" id="comma-delay-value" value="100" class="w-20 p-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 rounded-md shadow-sm">
+                    </div>
+                     <div class="flex items-center space-x-2">
+                        <label for="period-delay-value" class="text-sm font-medium text-gray-700 dark:text-gray-300 flex-grow">Sentence End (. ! ?)</label>
+                        <input type="number" id="period-delay-value" value="200" class="w-20 p-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 rounded-md shadow-sm">
+                    </div>
+                     <div class="flex items-center space-x-2">
+                        <label for="paragraph-delay-value" class="text-sm font-medium text-gray-700 dark:text-gray-300 flex-grow">End of Paragraph</label>
+                        <input type="number" id="paragraph-delay-value" value="250" class="w-20 p-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 rounded-md shadow-sm">
+                    </div>
+                </fieldset>
+
                 <!-- Other Options -->
                 <fieldset class="space-y-2 pt-4">
-                    <legend class="text-sm font-medium text-gray-700 mb-1">Options</legend>
+                    <legend class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Global Options</legend>
+                    <div class="relative flex items-start">
+                        <div class="flex items-center h-5">
+                            <input type="checkbox" id="dark-mode-toggle" class="h-4 w-4 text-blue-600 border-gray-300 rounded" checked>
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label for="dark-mode-toggle" class="font-medium text-gray-700 dark:text-gray-300">Dark Mode</label>
+                        </div>
+                    </div>
                     <div class="relative flex items-start">
                         <div class="flex items-center h-5">
                             <input type="checkbox" id="true-fullscreen-check" class="h-4 w-4 text-blue-600 border-gray-300 rounded" checked>
                         </div>
                         <div class="ml-3 text-sm">
-                            <label for="true-fullscreen-check" class="font-medium text-gray-700">True Fullscreen</label>
+                            <label for="true-fullscreen-check" class="font-medium text-gray-700 dark:text-gray-300">True Fullscreen</label>
                         </div>
                     </div>
                     <div class="relative flex items-start">
@@ -113,7 +129,7 @@
                             <input type="checkbox" id="ramp-up-check" class="h-4 w-4 text-blue-600 border-gray-300 rounded" checked>
                         </div>
                         <div class="ml-3 text-sm">
-                            <label for="ramp-up-check" class="font-medium text-gray-700">Enable speed ramp-up</label>
+                            <label for="ramp-up-check" class="font-medium text-gray-700 dark:text-gray-300">Enable speed ramp-up</label>
                         </div>
                     </div>
                     <div class="relative flex items-start">
@@ -121,7 +137,7 @@
                             <input type="checkbox" id="show-time-check" class="h-4 w-4 text-blue-600 border-gray-300 rounded" checked>
                         </div>
                         <div class="ml-3 text-sm">
-                            <label for="show-time-check" class="font-medium text-gray-700">Show Remaining Time</label>
+                            <label for="show-time-check" class="font-medium text-gray-700 dark:text-gray-300">Show Remaining Time</label>
                         </div>
                     </div>
                      <div class="relative flex items-start">
@@ -129,7 +145,7 @@
                             <input type="checkbox" id="rtl-check" class="h-4 w-4 text-blue-600 border-gray-300 rounded">
                         </div>
                         <div class="ml-3 text-sm">
-                            <label for="rtl-check" class="font-medium text-gray-700">Right-to-Left (RTL) Text</label>
+                            <label for="rtl-check" class="font-medium text-gray-700 dark:text-gray-300">Right-to-Left (RTL) Text</label>
                         </div>
                     </div>
                 </fieldset>
@@ -137,12 +153,19 @@
         </aside>
 
         <!-- Main Content Panel -->
-        <section class="w-full lg:w-2/3 xl:w-3/4 p-6 flex flex-col">
-            <label for="text-input" class="text-xl font-bold mb-4 text-gray-800">Your Text</label>
-            <textarea id="text-input" class="w-full flex-grow p-4 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 text-base" placeholder="Paste your text here..."></textarea>
+        <section class="w-full lg:w-2/3 xl:w-3/4 p-6 flex flex-col bg-gray-50 dark:bg-black">
+            <div class="flex justify-between items-center mb-4">
+                 <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Paragraph Sequence</h2>
+                 <button id="add-paragraph-btn" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75">
+                    Add Paragraph
+                </button>
+            </div>
+            <div id="paragraphs-container" class="space-y-4 flex-grow overflow-y-auto pr-2">
+                <!-- Paragraph blocks will be dynamically inserted here -->
+            </div>
             <div id="controls" class="mt-4 flex flex-wrap items-center gap-4">
               <button id="start-btn" class="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition-transform transform hover:scale-105">
-                Start Reading
+                Play Sequence
               </button>
               <button id="pause-btn" class="hidden px-8 py-3 bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-75 transition-transform transform hover:scale-105">
                 Pause
@@ -155,29 +178,19 @@
     </main>
 
     <!-- Fullscreen Reader Container -->
-    <div id="reader-container" class="fixed inset-0 bg-white flex-col items-center justify-center hidden z-50">
-        <!-- Top Guide -->
-        <div class="w-full max-w-5xl h-12 border-b-2 border-gray-300 relative mt-auto">
-            <div class="absolute bottom-0 w-px h-4 bg-gray-400 transform -translate-x-1/2" style="left: 40%;"></div>
-        </div>
-        
+    <div id="reader-container" class="fixed inset-0 bg-white dark:bg-black flex-col items-center justify-center hidden z-50">
         <!-- Word Display Wrapper -->
-        <div id="word-display-wrapper" class="flex-grow w-full relative flex items-center overflow-hidden">
+        <div id="word-display-wrapper" class="w-full h-full relative flex items-center overflow-hidden">
             <p id="word-display" class="absolute whitespace-nowrap"></p>
         </div>
 
-        <!-- Bottom Guide -->
-        <div class="w-full max-w-5xl h-12 border-t-2 border-gray-300 relative mb-auto">
-            <div class="absolute top-0 w-px h-4 bg-gray-400 transform -translate-x-1/2" style="left: 40%;"></div>
-        </div>
-
         <!-- Fullscreen Controls -->
-        <button id="exit-fullscreen-btn" title="Exit Reader" class="absolute top-5 right-5 text-gray-500 hover:text-black transition-colors">
+        <button id="exit-fullscreen-btn" title="Exit Reader" class="absolute top-5 right-5 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
         </button>
-        <div id="remaining-time-display" class="absolute bottom-5 text-gray-500 text-lg font-medium"></div>
+        <div id="remaining-time-display" class="absolute bottom-5 text-gray-500 dark:text-gray-400 text-lg font-medium"></div>
     </div>
 
 
@@ -188,15 +201,19 @@
                 settings: {
                     fontSelect: document.getElementById('font-select'),
                     fontSize: document.getElementById('font-size'),
-                    wpmSelect: document.getElementById('wpm-select'),
-                    chunkSize: document.getElementById('chunk-size'),
                     letterSpacing: document.getElementById('letter-spacing'),
+                    highlightColor: document.getElementById('highlight-color'),
+                    commaDelayValue: document.getElementById('comma-delay-value'),
+                    periodDelayValue: document.getElementById('period-delay-value'),
+                    paragraphDelayValue: document.getElementById('paragraph-delay-value'),
+                    darkModeToggle: document.getElementById('dark-mode-toggle'),
                     trueFullscreenCheck: document.getElementById('true-fullscreen-check'),
                     rampUpCheck: document.getElementById('ramp-up-check'),
                     showTimeCheck: document.getElementById('show-time-check'),
                     rtlCheck: document.getElementById('rtl-check'),
                 },
-                textInput: document.getElementById('text-input'),
+                paragraphsContainer: document.getElementById('paragraphs-container'),
+                addParagraphBtn: document.getElementById('add-paragraph-btn'),
                 controls: {
                     startBtn: document.getElementById('start-btn'),
                     pauseBtn: document.getElementById('pause-btn'),
@@ -212,31 +229,93 @@
 
             // --- State Management ---
             const state = {
-                words: [],
+                paragraphs: [],
+                playlist: [],
                 currentIndex: 0,
-                wpm: 300,
-                chunkSize: 1,
                 isPlaying: false,
                 isPaused: false,
                 timerId: null,
                 totalWords: 0,
+                nextParagraphId: 0,
             };
             
-            const RAMP_UP_WORDS = 10; // Number of words to ramp up speed
+            const RAMP_UP_WORDS = 10;
+            const BASE_WPM_FOR_SCALING = 300;
 
             // --- Core Functions ---
 
             /**
-             * Updates the application state from the settings panel UI.
+             * Creates the HTML for a new paragraph block.
+             * @param {object} paragraph - The paragraph object from state.
              */
-            function updateSettings() {
-                state.wpm = parseInt(elements.settings.wpmSelect.value, 10) || 300;
-                state.chunkSize = parseInt(elements.settings.chunkSize.value, 10) || 1;
+            function createParagraphElement(paragraph) {
+                const div = document.createElement('div');
+                div.className = 'p-4 border dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800';
+                div.dataset.id = paragraph.id;
+
+                div.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Paragraph Text</label>
+                        <button class="remove-paragraph-btn text-red-500 hover:text-red-700 text-2xl leading-none">&times;</button>
+                    </div>
+                    <textarea class="paragraph-text w-full p-2 border dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200" rows="4" placeholder="Paste paragraph text here...">${paragraph.text}</textarea>
+                    <div class="mt-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Words per minute (WPM)</label>
+                        <select class="paragraph-wpm w-full p-2 border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 rounded-md shadow-sm">
+                            <option value="120">120 WPM (15 Frames/Word)</option>
+                            <option value="180">180 WPM (10 Frames/Word)</option>
+                            <option value="300" ${paragraph.wpm === 300 ? 'selected' : ''}>300 WPM (6 Frames/Word)</option>
+                            <option value="360">360 WPM (5 Frames/Word)</option>
+                            <option value="450" ${paragraph.wpm === 450 ? 'selected' : ''}>450 WPM (4 Frames/Word)</option>
+                            <option value="600">600 WPM (3 Frames/Word)</option>
+                            <option value="900">900 WPM (2 Frames/Word)</option>
+                            <option value="1800">1800 WPM (1 Frame/Word)</option>
+                        </select>
+                    </div>
+                `;
+
+                div.querySelector('.paragraph-wpm').value = paragraph.wpm;
+
+                div.querySelector('.remove-paragraph-btn').addEventListener('click', () => removeParagraph(paragraph.id));
+                div.querySelector('.paragraph-text').addEventListener('input', (e) => updateParagraph(paragraph.id, 'text', e.target.value));
+                div.querySelector('.paragraph-wpm').addEventListener('change', (e) => updateParagraph(paragraph.id, 'wpm', parseInt(e.target.value, 10)));
                 
+                return div;
+            }
+
+            function addParagraph() {
+                const newParagraph = {
+                    id: state.nextParagraphId++,
+                    text: '',
+                    wpm: 300,
+                };
+                state.paragraphs.push(newParagraph);
+                elements.paragraphsContainer.appendChild(createParagraphElement(newParagraph));
+            }
+
+            function removeParagraph(id) {
+                state.paragraphs = state.paragraphs.filter(p => p.id !== id);
+                document.querySelector(`[data-id='${id}']`).remove();
+            }
+
+            function updateParagraph(id, key, value) {
+                const paragraph = state.paragraphs.find(p => p.id === id);
+                if (paragraph) {
+                    paragraph[key] = value;
+                }
+            }
+
+
+            /**
+             * Updates the global visual settings from the panel UI.
+             */
+            function updateGlobalSettings() {
                 const fontFamily = elements.settings.fontSelect.value;
                 const fontSize = `${elements.settings.fontSize.value}px`;
                 const fontWeight = '500';
                 const letterSpacing = elements.settings.letterSpacing.value;
+                const isDarkMode = elements.settings.darkModeToggle.checked;
+                const highlightColor = elements.settings.highlightColor.value;
 
                 const wordEl = elements.reader.wordDisplay;
                 wordEl.style.fontFamily = fontFamily;
@@ -244,76 +323,74 @@
                 wordEl.style.fontWeight = fontWeight;
                 wordEl.style.letterSpacing = letterSpacing;
 
+                document.getElementById('dynamic-styles').innerHTML = `.focus-letter { color: ${highlightColor}; }`;
+
+                if (isDarkMode) {
+                    document.documentElement.classList.add('dark');
+                    wordEl.style.color = 'white';
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    wordEl.style.color = 'black';
+                }
+
                 elements.reader.timeDisplay.style.display = elements.settings.showTimeCheck.checked ? 'block' : 'none';
             }
 
-            /**
-             * Calculates the Optimal Recognition Point (ORP) index for a word.
-             * This determines which letter becomes the red "focus letter".
-             * @param {string} word The word to calculate the ORP for.
-             * @returns {number} The index of the character to highlight.
-             */
             function getORPIndex(word) {
                 const len = word.length;
-                if (len <= 1) return 0;      // 1-letter word
-                if (len <= 5) return 1;      // 2-5 letter word
-                if (len <= 9) return 2;      // 6-9 letter word
-                if (len <= 13) return 3;     // 10-13 letter word
-                return 4;                    // 14+ letter word
+                if (len <= 1) return 0;
+                if (len <= 5) return 1;
+                if (len <= 9) return 2;
+                if (len <= 13) return 3;
+                return 4;
             }
 
-            /**
-             * Displays the next word/chunk in the reader, perfectly centering the focus letter.
-             */
             function displayNextWord() {
-                const chunk = state.words.slice(state.currentIndex, state.currentIndex + state.chunkSize).join(' ');
+                const item = state.playlist[state.currentIndex];
                 const wordEl = elements.reader.wordDisplay;
                 
-                if (chunk) {
-                    const firstWord = chunk.split(' ')[0];
+                if (item && item.chunk) {
+                    const firstWord = item.chunk.split(' ')[0];
                     const orpIndex = getORPIndex(firstWord);
                     
-                    const beforeText = chunk.substring(0, orpIndex);
-                    const focusText = chunk.substring(orpIndex, orpIndex + 1);
-                    const afterText = chunk.substring(orpIndex + 1);
+                    const beforeText = item.chunk.substring(0, orpIndex);
+                    const focusText = item.chunk.substring(orpIndex, orpIndex + 1);
+                    const afterText = item.chunk.substring(orpIndex + 1);
 
-                    // Set the HTML with spans to measure their widths
                     wordEl.innerHTML = 
                         `<span id="word-before">${beforeText}</span>` +
                         `<span id="word-focus" class="focus-letter">${focusText}</span>` +
                         `<span id="word-after">${afterText}</span>`;
 
-                    // Measure the rendered widths of the parts of the word
                     const beforeEl = document.getElementById('word-before');
                     const focusEl = document.getElementById('word-focus');
                     
                     const beforeWidth = beforeEl.offsetWidth;
                     const focusWidth = focusEl.offsetWidth;
-
-                    // Calculate the offset needed to center the middle of the focus letter
                     const offset = beforeWidth + (focusWidth / 2);
 
-                    // Position the start of the element at the new anchor, then translate it back by the calculated offset
                     wordEl.style.left = '40%';
-                    wordEl.style.transform = `translateX(-${offset}px)`;
-
+                    wordEl.style.top = '50%';
+                    wordEl.style.transform = `translateX(-${offset}px) translateY(-50%)`;
                 } else {
                     wordEl.innerHTML = '';
                 }
-
                 updateRemainingTime();
             }
             
-            /**
-             * Updates the remaining time display.
-             */
             function updateRemainingTime() {
                 if (!elements.settings.showTimeCheck.checked) {
                     elements.reader.timeDisplay.innerHTML = '';
                     return;
                 }
-                const wordsLeft = Math.max(0, state.totalWords - state.currentIndex);
-                const secondsLeft = Math.ceil((wordsLeft / state.wpm) * 60);
+                
+                let totalMsLeft = 0;
+                for (let i = state.currentIndex; i < state.playlist.length; i++) {
+                    const item = state.playlist[i];
+                    const wpmDelay = (60 / item.wpm) * 1000;
+                    totalMsLeft += wpmDelay + item.extraDelay;
+                }
+                const secondsLeft = Math.ceil(totalMsLeft / 1000);
 
                 if (secondsLeft > 0) {
                     const minutes = Math.floor(secondsLeft / 60);
@@ -324,59 +401,82 @@
                 }
             }
 
-
-            // --- Control Flow Functions ---
-
-            /**
-             * The main loop for displaying words. Uses setTimeout for variable delays.
-             */
+            // --- Control Flow ---
             function scheduleNextWord() {
-                if (state.currentIndex >= state.words.length || !state.isPlaying) {
-                    if (state.currentIndex >= state.words.length) endReading();
+                if (state.currentIndex >= state.playlist.length || !state.isPlaying) {
+                    if (state.currentIndex >= state.playlist.length) endReading();
                     return;
                 }
                 
                 displayNextWord();
-                state.currentIndex += state.chunkSize;
+                
+                const item = state.playlist[state.currentIndex];
+                let currentWPM = item.wpm;
+                const chunkSize = item.chunk.split(' ').length;
 
-                let currentWPM = state.wpm;
-                // Ramp up speed if the option is checked
-                if (elements.settings.rampUpCheck.checked && state.currentIndex < RAMP_UP_WORDS * state.chunkSize) {
-                    const startWPM = state.wpm / 2;
-                    const progress = state.currentIndex / (RAMP_UP_WORDS * state.chunkSize);
-                    currentWPM = startWPM + (state.wpm - startWPM) * progress;
+                if (elements.settings.rampUpCheck.checked && state.currentIndex < RAMP_UP_WORDS) {
+                    const startWPM = currentWPM / 2;
+                    const progress = state.currentIndex / RAMP_UP_WORDS;
+                    currentWPM = startWPM + (currentWPM - startWPM) * progress;
                 }
-
-                const delay = (60 / currentWPM) * 1000 * state.chunkSize;
-                state.timerId = setTimeout(scheduleNextWord, delay);
+                
+                state.currentIndex++;
+                const wpmDelay = (60 / currentWPM) * 1000 * chunkSize;
+                const totalDelay = wpmDelay + item.extraDelay;
+                state.timerId = setTimeout(scheduleNextWord, totalDelay);
             }
 
-            /**
-             * Prepares and starts the reading process.
-             */
-            function initializeReading() {
-                updateSettings();
-                state.words = elements.textInput.value.split(/\s+/).filter(word => word.length > 0);
-                state.totalWords = state.words.length;
-                state.currentIndex = 0;
+            function buildPlaylist() {
+                state.playlist = [];
+                const { 
+                    commaDelayValue, 
+                    periodDelayValue,
+                    paragraphDelayValue
+                } = elements.settings;
 
+                state.paragraphs.forEach((p, pIndex) => {
+                    const words = p.text.split(/\s+/).filter(word => word.length > 0);
+                    const scalingFactor = Math.pow(p.wpm / BASE_WPM_FOR_SCALING, 1/4);
+
+                    words.forEach((word, wIndex) => {
+                        let extraDelay = 0;
+                        let wordToDisplay = word;
+
+                        if (parseInt(commaDelayValue.value) > 0 && wordToDisplay.endsWith(',')) {
+                            wordToDisplay = wordToDisplay.slice(0, -1);
+                            extraDelay += parseInt(commaDelayValue.value, 10) / scalingFactor;
+                        }
+
+                        if (parseInt(periodDelayValue.value) > 0 && (wordToDisplay.endsWith('.') || wordToDisplay.endsWith('!') || wordToDisplay.endsWith('?'))) {
+                            extraDelay += parseInt(periodDelayValue.value, 10) / scalingFactor;
+                        }
+                        
+                        if (wIndex === words.length - 1 && parseInt(paragraphDelayValue.value) > 0) {
+                             extraDelay += parseInt(paragraphDelayValue.value, 10) / scalingFactor;
+                        }
+                        
+                        if (wordToDisplay) {
+                             state.playlist.push({ chunk: wordToDisplay, wpm: p.wpm, extraDelay });
+                        }
+                    });
+                });
+                state.totalWords = state.playlist.length;
+            }
+
+            function initializeReading() {
+                updateGlobalSettings();
+                buildPlaylist();
+                if (state.playlist.length === 0) {
+                    alert('Please add some text to the paragraphs.');
+                    return;
+                }
+                state.currentIndex = 0;
                 elements.reader.container.classList.remove('hidden');
                 elements.reader.container.classList.add('flex');
-                
-                // Start a silent 3-second delay
                 setTimeout(beginReading, 3000);
             }
 
-            /**
-             * Starts the reading process, handling fullscreen if requested.
-             */
             function startReading() {
-                const text = elements.textInput.value;
-                if (!text.trim()) {
-                    alert('Please paste some text to read.');
-                    return;
-                }
-
                 if (state.isPlaying && state.isPaused) {
                     resumeReading();
                     return;
@@ -385,17 +485,15 @@
                 if (elements.settings.trueFullscreenCheck.checked) {
                     document.documentElement.requestFullscreen().then(initializeReading).catch(err => {
                         alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+                        initializeReading();
                     });
                 } else {
                     initializeReading();
                 }
             }
             
-            /**
-             * Begins the word display interval.
-             */
             function beginReading() {
-                if(state.isPlaying) return; // Prevent multiple starts if button is spammed
+                if(state.isPlaying) return;
                 state.isPlaying = true;
                 state.isPaused = false;
                 elements.controls.startBtn.classList.add('hidden');
@@ -403,9 +501,6 @@
                 scheduleNextWord();
             }
 
-            /**
-             * Pauses the reading process.
-             */
             function pauseReading() {
                 if (!state.isPlaying) return;
                 clearTimeout(state.timerId);
@@ -416,18 +511,12 @@
                 elements.controls.startBtn.textContent = 'Resume';
             }
 
-            /**
-             * Resumes reading from a paused state.
-             */
             function resumeReading() {
                 if (!state.isPaused) return;
                 beginReading();
-                elements.controls.startBtn.textContent = 'Start Reading'; // Reset button text
+                elements.controls.startBtn.textContent = 'Play Sequence';
             }
             
-            /**
-             * Resets the reader to its initial state.
-             */
             function resetReading() {
                 if (document.fullscreenElement) {
                     document.exitFullscreen();
@@ -436,45 +525,39 @@
                 state.isPlaying = false;
                 state.isPaused = false;
                 state.currentIndex = 0;
-                state.words = [];
+                state.playlist = [];
                 elements.reader.container.classList.add('hidden');
                 elements.reader.container.classList.remove('flex');
                 elements.reader.wordDisplay.innerHTML = '';
-                elements.reader.wordDisplay.style.transform = 'translateX(0px)';
+                elements.reader.wordDisplay.style.transform = '';
+                elements.reader.wordDisplay.style.left = '';
+                elements.reader.wordDisplay.style.top = '';
                 elements.reader.timeDisplay.innerHTML = '';
                 elements.controls.pauseBtn.classList.add('hidden');
                 elements.controls.startBtn.classList.remove('hidden');
-                elements.controls.startBtn.textContent = 'Start Reading';
+                elements.controls.startBtn.textContent = 'Play Sequence';
             }
 
-            /**
-             * Called when all words have been read.
-             */
             function endReading() {
                 clearTimeout(state.timerId);
                 state.isPlaying = false;
-                setTimeout(() => {
-                    resetReading();
-                }, 1500); // Wait a moment on the last word before closing
+                setTimeout(resetReading, 1500);
             }
 
-            /**
-             * Handles the browser exiting fullscreen mode (e.g., via Esc key).
-             */
             function handleFullscreenChange() {
                 if (!document.fullscreenElement && state.isPlaying) {
                     resetReading();
                 }
             }
 
-
             // --- Event Listeners ---
             function setupEventListeners() {
                 Object.values(elements.settings).forEach(el => {
-                    el.addEventListener('change', updateSettings);
-                    if(el.type === 'number') el.addEventListener('input', updateSettings);
+                    el.addEventListener('change', updateGlobalSettings);
+                    el.addEventListener('input', updateGlobalSettings);
                 });
-
+                
+                elements.addParagraphBtn.addEventListener('click', addParagraph);
                 elements.controls.startBtn.addEventListener('click', startReading);
                 elements.controls.pauseBtn.addEventListener('click', pauseReading);
                 elements.controls.resetBtn.addEventListener('click', resetReading);
@@ -482,26 +565,22 @@
                 
                 document.addEventListener('fullscreenchange', handleFullscreenChange);
                 
-                // Keyboard controls for the reader
                 document.addEventListener('keydown', (e) => {
-                    if (!state.isPlaying && !state.isPaused) return; // Only if reader is active
+                    if (!state.isPlaying && !state.isPaused) return;
                     if (e.code === 'Space') {
-                        e.preventDefault(); // prevent page scroll
-                        if (state.isPlaying && !state.isPaused) {
-                            pauseReading();
-                        } else {
-                            resumeReading();
-                        }
+                        e.preventDefault();
+                        if (state.isPlaying && !state.isPaused) pauseReading();
+                        else resumeReading();
                     }
                     if (e.code === 'Escape' && !document.fullscreenElement) {
-                        // Only trigger reset if not in fullscreen, as Esc is handled by fullscreen exit
                         resetReading();
                     }
                 });
             }
 
             // --- Initialization ---
-            updateSettings();
+            updateGlobalSettings();
+            addParagraph(); // Start with one paragraph block
             setupEventListeners();
         });
     </script>
